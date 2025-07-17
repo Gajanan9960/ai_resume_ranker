@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>About - AI Resume Ranker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f9fafd;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      line-height: 1.6;
+    }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: #1e2a38;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .navbar .logo {
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .navbar .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .navbar .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 4px;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    .navbar .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 0;
+      height: 2px;
+      background-color: #f1c40f;
+      transition: width 0.3s ease-in-out;
+    }
+    .navbar .nav-links a:hover {
+      color: #f1c40f;
+    }
+    .navbar .nav-links a.active::after {
+      width: 100%;
+    }
+    main {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #34495e;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    p {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 16px;
+    }
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    a.link-highlight {
+      color: #3498db;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a.link-highlight:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" role="navigation" aria-label="Primary Navigation">
+    <div class="logo">AI Resume Ranker</div>
+    <div class="nav-links">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/upload">Upload Resume</a>
+      <a href="/results">View Candidates</a>
+      <a href="/about" class="active" aria-current="page">About</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <main role="main">
+    <h1>About AI Resume Ranker</h1>
+    <p>
+      The AI Resume Ranker is a powerful tool designed to help HR professionals and recruiters efficiently screen and rank candidate resumes based on technical skills and job requirements. By leveraging advanced parsing and scoring algorithms, it simplifies the hiring process and helps identify top talent faster.
+    </p>
+
+    <h2>Features</h2>
+    <ul>
+      <li>Automatic extraction of technical skills from resumes.</li>
+      <li>Skill matching and scoring based on job description keywords.</li>
+      <li>Interactive dashboard with visual charts showing resume score distributions.</li>
+      <li>Easy export of candidate data in PDF and CSV formats.</li>
+      <li>Search and filter capabilities to quickly find candidates.</li>
+    </ul>
+
+    <h2>How It Works</h2>
+    <p>
+      Resumes uploaded into the system are parsed to identify key technical skills and experience. Each resume is then scored by matching the extracted skills against a curated dictionary of required technical skills derived from job descriptions. The dashboard provides real-time insights into candidate quality and helps prioritize the best fits.
+    </p>
+
+    <h2>Get In Touch</h2>
+    <p>
+      For questions, feature requests, or support, please contact the development team at
+      <a href="mailto:support@airesumeranker.com" class="link-highlight">support@airesumeranker.com</a>.
+    </p>
+  </main>
+</body>
+</html>

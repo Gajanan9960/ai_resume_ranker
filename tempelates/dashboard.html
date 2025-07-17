@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+<header class="bg-gray-900 text-white shadow">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <h1 class="text-xl font-semibold">AI Resume Ranker</h1>
+    <nav class="flex gap-6 text-sm">
+      <a href="/dashboard" class="border-b-2 border-yellow-400 pb-1">Dashboard</a>
+      <a href="/upload" class="hover:text-yellow-400">Upload</a>
+      <a href="/results" class="hover:text-yellow-400">Candidates</a>
+      <a href="/about" class="hover:text-yellow-400">About</a>
+      <a href="/logout" class="hover:text-yellow-400">Logout</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+
+  <!-- Filters -->
+  <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <form method="GET" action="/dashboard" class="flex gap-2 flex-wrap">
+      <select name="job_title" onchange="this.form.submit()" class="px-3 py-2 rounded-md border shadow-sm text-sm">
+        <option value="">Filter by Job Title</option>
+        {% for title in all_titles %}
+          <option value="{{ title }}" {% if selected_title == title %}selected{% endif %}>{{ title }}</option>
+        {% endfor %}
+      </select>
+      <select name="tag" onchange="this.form.submit()" class="px-3 py-2 rounded-md border shadow-sm text-sm">
+        <option value="">Filter by Tag</option>
+        {% for tag in all_tags %}
+          <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>{{ tag }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    {% for stat in stats %}
+    <div class="bg-white p-4 rounded-xl shadow text-center">
+      <p class="text-sm text-gray-500">{{ stat.label }}</p>
+      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ stat.value }}</h2>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Shortlisted Candidates -->
+<div class="bg-white p-6 rounded-xl shadow mb-10">
+  <h3 class="text-lg font-semibold mb-4">Shortlisted Candidates</h3>
+  <div class="overflow-x-auto">
+    <table id="shortlistTable" class="min-w-full text-sm border border-gray-200 rounded-lg shadow-sm">
+      <thead class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
+        <tr>
+          <th class="px-4 py-2 border-b">Name</th>
+          <th class="px-4 py-2 border-b">Score</th>
+          <th class="px-4 py-2 border-b">Job Role</th>
+          <th class="px-4 py-2 border-b">Email</th>
+          <th class="px-4 py-2 border-b">Tag</th>
+        </tr>
+      </thead>
+      <tbody class="text-gray-800">
+        {% for c in shortlisted_candidates %}
+        <tr class="hover:bg-gray-50 border-t">
+          <td class="px-4 py-2 border-b">{{ c.name }}</td>
+          <td class="px-4 py-2 border-b">{{ c.score }}</td>
+          <td class="px-4 py-2 border-b">{{ c.job_title or '—' }}</td>
+          <td class="px-4 py-2 border-b">{{ c.email or '—' }}</td>
+          <td class="px-4 py-2 border-b">{{ c.tag or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+  <!-- Charts -->
+  <div class="grid md:grid-cols-3 gap-6 mb-10">
+    <div class="md:col-span-2 bg-white p-6 rounded-xl shadow">
+      <h3 class="text-lg font-semibold mb-4">Resume Upload Trends</h3>
+      <canvas id="processingChart" height="140"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-xl shadow">
+      <h3 class="text-lg font-semibold mb-4">Tag Distribution</h3>
+      <canvas id="tagChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Skills -->
+  <div class="bg-white p-6 rounded-xl shadow mb-10">
+    <h3 class="text-lg font-semibold mb-4">Top Skills (Matched)</h3>
+    {% for skill in top_skills %}
+    <div class="mb-3">
+      <div class="flex justify-between text-sm mb-1">
+        <span>{{ skill.name }}</span>
+        <span>{{ skill.count }}</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: {{ skill.percent }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+    {% if top_skills|length == 0 %}
+      <p class="text-sm text-gray-500">No skill data available.</p>
+    {% endif %}
+  </div>
+
+  <!-- Top Candidates Table -->
+  <div class="bg-white p-6 rounded-xl shadow mb-10">
+    <h3 class="text-lg font-semibold mb-4">Top Candidates</h3>
+    <div class="overflow-x-auto">
+      <table id="candidateTable" class="min-w-full text-sm border border-gray-200 rounded-lg shadow-sm">
+        <thead class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
+          <tr>
+            <th class="px-4 py-2 border-b">Name</th>
+            <th class="px-4 py-2 border-b">Score</th>
+            <th class="px-4 py-2 border-b">Tag</th>
+            <th class="px-4 py-2 border-b">Job Title</th>
+            <th class="px-4 py-2 border-b">Uploaded</th>
+            <th class="px-4 py-2 border-b">Matched Skills</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-800">
+          {% for c in top_candidates %}
+          <tr class="hover:bg-gray-50 border-t">
+            <td class="px-4 py-2 border-b">{{ c.name }}</td>
+            <td class="px-4 py-2 border-b">{{ c.score }}</td>
+            <td class="px-4 py-2 border-b">{{ c.tag or '—' }}</td>
+            <td class="px-4 py-2 border-b">{{ c.job_title or selected_title or '—' }}</td>
+            <td class="px-4 py-2 border-b">{{ c.uploaded or '—' }}</td>
+            <td class="px-4 py-2 border-b">{{ c.matched_skills | join(", ") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+    <ul>
+      {% for item in recent %}
+      <li class="mb-2 text-sm text-gray-700">
+        {{ item.message }} <span class="text-xs text-gray-400">({{ item.time }})</span>
+      </li>
+      {% endfor %}
+      {% if recent|length == 0 %}
+        <p class="text-sm text-gray-500">No recent uploads yet.</p>
+      {% endif %}
+    </ul>
+  </div>
+
+</main>
+
+<!-- Chart Scripts -->
+<script>
+  // Upload Trends Line Chart
+  const uploadCtx = document.getElementById('processingChart').getContext('2d');
+  new Chart(uploadCtx, {
+    type: 'line',
+    data: {
+      labels: {{ dates | safe }},
+      datasets: [{
+        label: 'Resumes Uploaded',
+        data: {{ counts | safe }},
+        fill: true,
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+        pointRadius: 3,
+        borderWidth: 2,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          ticks: {
+            maxTicksLimit: 10,
+            autoSkip: true,
+            maxRotation: 30,
+            minRotation: 30
+          },
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        }
+      }
+    }
+  });
+
+  // Tag Pie Chart (if tag data exists)
+  const tagLabels = {{ tag_counts.keys() | list | safe }};
+  const tagData = {{ tag_counts.values() | list | safe }};
+
+  if (tagLabels.length && tagData.length) {
+    new Chart(document.getElementById('tagChart').getContext('2d'), {
+      type: 'pie',
+      data: {
+        labels: tagLabels,
+        datasets: [{
+          data: tagData,
+          backgroundColor: [
+            '#4F46E5', '#06B6D4', '#10B981', '#F59E0B',
+            '#EF4444', '#A78BFA', '#F472B6', '#34D399'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: ${ctx.raw}`
+            }
+          }
+        }
+      }
+    });
+  } else {
+    document.getElementById('tagChart').outerHTML = "<p class='text-sm text-gray-500 p-4'>No tag data available.</p>";
+  }
+
+  // Initialize DataTables safely
+  $(document).ready(function () {
+    if (!$.fn.DataTable.isDataTable('#candidateTable')) {
+      $('#candidateTable').DataTable({
+        responsive: true,
+        dom: 'Bfrtip',
+        buttons: ['copy', 'csv', 'excel']
+      });
+    }
+
+    if (!$.fn.DataTable.isDataTable('#shortlistTable')) {
+      $('#shortlistTable').DataTable({
+        responsive: true,
+        dom: 'Bfrtip',
+        buttons: ['copy', 'csv', 'excel']
+      });
+    }
+  });
+</script>
+</body>
+</html>
+
+</body>
+</html>

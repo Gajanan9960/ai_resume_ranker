@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Resume Ranker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f9fafd;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1e2a38;
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar .logo {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .navbar .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .navbar .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      padding: 6px 0;
+      position: relative;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+
+    .navbar .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 0;
+      height: 2px;
+      background-color: #f1c40f;
+      transition: width 0.3s ease;
+    }
+
+    .navbar .nav-links a:hover,
+    .navbar .nav-links a.active {
+      color: #f1c40f;
+    }
+
+    .navbar .nav-links a:hover::after,
+    .navbar .nav-links a.active::after {
+      width: 100%;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 40px 30px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      color: #1e2a38;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #1e2a38;
+      font-size: 1rem;
+    }
+
+    input[type="file"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 15px;
+      margin-top: 8px;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+      transition: border-color 0.3s ease;
+    }
+
+    input[type="file"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+    }
+
+    button {
+      margin-top: 30px;
+      width: 100%;
+      background-color: #3498db;
+      color: white;
+      padding: 14px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #fileCount {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.9rem;
+      color: #555;
+      font-style: italic;
+    }
+
+    p {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 1rem;
+    }
+
+    p a {
+      color: #3498db;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    p a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">AI Resume Ranker</div>
+    <div class="nav-links">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/upload" class="active">Upload Resume</a>
+      <a href="/results">View Candidates</a>
+      <a href="/about">About</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2>📤 Upload Resume(s) and Select Job Description</h2>
+    <form id="resumeForm" action="/upload" method="POST" enctype="multipart/form-data">
+      <label for="resume">Select Resume(s) (PDF or Image):</label>
+      <input type="file" id="resume" name="resume" accept=".pdf,.jpg,.jpeg,.png" multiple required>
+      <small id="fileCount"></small>
+      <div id="progressBarContainer" style="display:none; margin-top: 20px;">
+        <label>Uploading...</label>
+        <div style="background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+          <div id="progressBar" style="width: 0%; height: 20px; background: #3498db;"></div>
+        </div>
+      </div>
+
+      <label for="jobSelect">Choose a Job Role:</label>
+      <select id="jobSelect">
+        <option value="">-- Select a predefined role --</option>
+        <option value="Looking for a Python developer with Flask, SQL, and NLP experience.">
+          Python Developer (Flask, SQL, NLP)
+        </option>
+        <option value="Seeking a full-stack developer with React, Node.js, and MongoDB skills.">
+          Full-Stack Developer (React, Node, MongoDB)
+        </option>
+        <option value="Hiring data analyst with Excel, Python, and Tableau experience.">
+          Data Analyst (Excel, Python, Tableau)
+        </option>
+        <option value="Searching for a machine learning engineer with TensorFlow, PyTorch, and Scikit-learn experience.">
+          Machine Learning Engineer (TF, PyTorch)
+        </option>
+      </select>
+
+      <input type="hidden" id="job_role" name="job_role" value="">
+
+      <label for="job_description">Or type a custom Job Description:</label>
+      <textarea id="job_description" name="job_description" rows="4" placeholder="Enter job description..." required minlength="15"></textarea>
+
+      <button type="submit">Submit</button>
+    </form>
+    <p><a href="/results">View Ranked Resumes →</a></p>
+  </div>
+
+  <script>
+    const jobSelect = document.getElementById("jobSelect");
+    const jobDesc = document.getElementById("job_description");
+    const jobRoleInput = document.getElementById("job_role");
+
+    jobSelect.addEventListener("change", function () {
+      jobDesc.value = this.value;
+      jobRoleInput.value = this.value;
+    });
+
+    jobDesc.addEventListener("input", function () {
+      jobRoleInput.value = this.value;
+    });
+
+    document.getElementById("resume").addEventListener("change", function () {
+      const count = this.files.length;
+      document.getElementById("fileCount").textContent = `${count} file(s) selected.`;
+    });
+
+    document.getElementById("resumeForm").addEventListener("submit", function (e) {
+      const files = document.getElementById("resume").files;
+      const desc = jobDesc.value.trim();
+
+      if (files.length === 0) {
+        alert("Please upload at least one resume file.");
+        e.preventDefault();
+        return;
+      }
+
+      const validTypes = ["application/pdf", "image/jpeg", "image/png"];
+      for (let file of files) {
+        if (!validTypes.includes(file.type)) {
+          alert(`Unsupported file type: ${file.name}. Only PDF, JPG, and PNG are allowed.`);
+          e.preventDefault();
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`File ${file.name} exceeds 5MB limit.`);
+          e.preventDefault();
+          return;
+        }
+      }
+
+      if (!desc || desc.length < 15) {
+        alert("Please enter a valid job description (minimum 15 characters).");
+        e.preventDefault();
+        return;
+      }
+
+      jobRoleInput.value = desc; // Ensure job_role field is synced before submit
+    
+    });
+    document.getElementById("resumeForm").addEventListener("submit", function (e) {
+  const form = this;
+  e.preventDefault();
+
+  const formData = new FormData(form);
+  const xhr = new XMLHttpRequest();
+  const progressBar = document.getElementById("progressBar");
+  const progressBarContainer = document.getElementById("progressBarContainer");
+
+  xhr.open("POST", form.action, true);
+  progressBarContainer.style.display = "block";
+
+  xhr.upload.onprogress = function (e) {
+    if (e.lengthComputable) {
+      const percent = (e.loaded / e.total) * 100;
+      progressBar.style.width = percent + "%";
+    }
+  };
+
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      window.location.href = "/results";
+    } else {
+      alert("Upload failed.");
+    }
+  };
+
+  xhr.send(formData);
+});
+  </script>
+</body>
+</html>
