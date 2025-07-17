@@ -1,0 +1,110 @@
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  body {
+    background-color: #f4f7fa;
+    color: #333;
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  
+  /* Container */
+  .container {
+    background-color: #fff;
+    max-width: 650px;
+    margin: auto;
+    padding: 30px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .container:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+  
+  h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #2c3e50;
+  }
+  
+  /* Form Layout */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  label {
+    font-weight: 600;
+    color: #34495e;
+  }
+  
+  /* Inputs */
+  input[type="file"],
+  select,
+  textarea {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  input[type="file"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);
+  }
+  
+  /* Button */
+  button[type="submit"] {
+    background-color: #3498db;
+    color: white;
+    padding: 12px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  button[type="submit"]:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+  }
+  
+  /* Result Link */
+  a {
+    display: block;
+    margin-top: 20px;
+    text-align: center;
+    color: #3498db;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  a:hover {
+    color: #21618c;
+    text-decoration: underline;
+  }
+  
+  /* Responsive Improvements */
+  @media (max-width: 600px) {
+    .container {
+      padding: 20px 15px;
+    }
+  
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
