@@ -8,4 +8,3 @@ pytesseract
 spacy
 pandas
 MarkupSafe
-gridfs
