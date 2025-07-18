@@ -21,11 +21,12 @@ import subprocess
 import sys
 
 # Load spaCy model with auto-download if missing
+# Load spaCy model with auto-download if missing
 try:
-    nlp = spacy.load("en_core_web_lg")
+    nlp = spacy.load("en_core_web_sm")
 except OSError:
-    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_lg"])
-    nlp = spacy.load("en_core_web_lg")
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+    nlp = spacy.load("en_core_web_sm")
 
 
 # --- App Setup ---
