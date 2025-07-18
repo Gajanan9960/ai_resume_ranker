@@ -8,3 +8,4 @@ pytesseract
 spacy
 pandas
 MarkupSafe
+gunicorn
