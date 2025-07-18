@@ -17,6 +17,16 @@ from pdfminer.high_level import extract_text
 from gridfs import GridFS
 from markupsafe import Markup
 from difflib import SequenceMatcher
+import subprocess
+import sys
+
+# Load spaCy model with auto-download if missing
+try:
+    nlp = spacy.load("en_core_web_lg")
+except OSError:
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_lg"])
+    nlp = spacy.load("en_core_web_lg")
+
 
 # --- App Setup ---
 app = Flask(__name__)
