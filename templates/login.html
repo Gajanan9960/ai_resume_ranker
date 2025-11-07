@@ -100,6 +100,12 @@
       <div id="register-tab">Register</div>
     </div>
 
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="error">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
     {% if error %}
       <div class="error">{{ error }}</div>
     {% endif %}
@@ -111,26 +117,19 @@
       <button type="submit">Login</button>
     </form>
 
-    <!-- Register Form (placeholder only) -->
+    <!-- Register Form (disabled) -->
     <form id="register-form">
       <input type="text" name="new_username" placeholder="New Username" required disabled />
       <input type="email" name="email" placeholder="Email" required disabled />
       <input type="password" name="new_password" placeholder="Password" required disabled />
       <input type="password" name="confirm_password" placeholder="Confirm Password" required disabled />
-      <button type="button" onclick="alert('Registration is not enabled in this demo')">Register</button>
+      <button type="button" onclick="alert('Registration is disabled in this demo')">Register</button>
     </form>
 
     <div class="note">Default Login: <b>admin / admin123</b></div>
   </div>
 
   <script>
-    loginTab.addEventListener('click', () => {
-  // switches to login
-});
-
-registerTab.addEventListener('click', () => {
-  // switches to register
-});
     const loginTab = document.getElementById('login-tab');
     const registerTab = document.getElementById('register-tab');
     const loginForm = document.getElementById('login-form');

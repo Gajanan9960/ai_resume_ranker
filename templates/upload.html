@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Resume Ranker — Upload</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: #f9fafb; color: #0f172a; }
+    .navbar { display:flex;justify-content:space-between;align-items:center;background:#1e2a38;padding:1rem 1.5rem;position:sticky;top:0;z-index:50 }
+    .navbar a{ color:#fff; font-weight:600; text-decoration:none; margin-left:1rem }
+    .card { background:#fff; border-radius:12px; padding:28px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+    .tag { background:#eef2ff; color:#3730a3; padding:6px 10px; border-radius:999px; font-weight:600; font-size:0.85rem }
+    input[type="file"] { padding:.5rem; }
+    .hint { font-size:0.9rem; color:#6b7280; }
+    .chip { display:inline-block;background:#eefcf3;color:#065f46;padding:6px 10px;border-radius:999px;margin:4px 6px 4px 0;font-size:0.85rem }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="flex items-center gap-4">
+      <div class="text-white font-semibold">AI Resume Ranker</div>
+    </div>
+    <nav class="flex items-center">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/results">Candidates</a>
+      <a href="/about">About</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </header>
+
+  <main class="max-w-3xl mx-auto mt-10 px-4">
+    <section class="card">
+      <h1 class="text-2xl font-semibold mb-1">📤 Upload Resume</h1>
+      <p class="hint mb-4">Upload a single resume (PDF / JPG / PNG). Paste a job description or choose a template — the app will extract keywords and rank the candidate.</p>
+
+      <form id="resumeForm" method="POST" action="/upload" enctype="multipart/form-data" class="space-y-4">
+        <!-- Resume file -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Resume (PDF, JPG, PNG)</label>
+          <input id="resume" name="resume" type="file" accept=".pdf,.jpg,.jpeg,.png" class="w-full" required />
+          <p id="fileCount" class="hint mt-2">No file selected</p>
+        </div>
+
+        <!-- Predefined job role (fills job_desc) -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Choose a job template (optional)</label>
+          <select id="jobTemplate" class="w-full rounded-md border px-3 py-2" aria-label="Job templates">
+            <option value="">— Select a predefined role —</option>
+            <option value="Looking for a Python developer with Flask, SQL, and NLP experience.">Python Developer (Flask, SQL, NLP)</option>
+            <option value="Seeking a full-stack developer with React, Node.js and MongoDB skills.">Full-stack (React, Node, MongoDB)</option>
+            <option value="Hiring a machine learning engineer with TensorFlow, PyTorch and scikit-learn experience.">ML Engineer (TF, PyTorch)</option>
+            <option value="Data analyst required: Excel, SQL, Python, Tableau experience.">Data Analyst (Excel, SQL, Tableau)</option>
+          </select>
+        </div>
+
+        <!-- Job title (short) -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Job Title (short)</label>
+          <input id="job_title" name="job_title" type="text" class="w-full rounded-md border px-3 py-2" placeholder="e.g. Backend Developer" />
+        </div>
+
+        <!-- Job description -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Job Description</label>
+          <textarea id="job_desc" name="job_desc" rows="5" minlength="15" required class="w-full rounded-md border px-3 py-2" placeholder="Paste the full job description or paste requirements here..."></textarea>
+          <p class="hint mt-2">Tip: keep it > 15 characters. You can auto-generate keywords from the description below.</p>
+        </div>
+
+        <!-- Keywords (comma-separated) -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Keywords (comma-separated)</label>
+          <input id="keywords" name="keywords" type="text" class="w-full rounded-md border px-3 py-2" placeholder="e.g. python, flask, mongodb, nlp" />
+          <div class="mt-2">
+            <button type="button" id="suggestBtn" class="tag">✨ Suggest keywords</button>
+            <span class="hint ml-3">Or edit the suggested list before upload.</span>
+          </div>
+          <div id="suggested" class="mt-3"></div>
+        </div>
+
+        <!-- Progress + submit -->
+        <div>
+          <div id="progressWrap" class="hidden mt-2">
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div id="progressBar" class="h-3 bg-blue-500" style="width:0%"></div>
+            </div>
+            <p id="progressText" class="hint mt-2"></p>
+          </div>
+
+          <div class="mt-4">
+            <button id="submitBtn" type="submit" class="w-full bg-blue-600 text-white font-semibold px-4 py-3 rounded-md">Analyze Resume</button>
+          </div>
+        </div>
+      </form>
+
+      <p class="hint mt-4 text-center">After upload you'll be redirected to the results page. For demo, keep sample PDFs ready.</p>
+    </section>
+  </main>
+
+<script>
+  // Basic UI wiring and validation + keyword suggestion
+  const resumeInput = document.getElementById('resume');
+  const fileCount = document.getElementById('fileCount');
+  const jobTemplate = document.getElementById('jobTemplate');
+  const jobDesc = document.getElementById('job_desc');
+  const jobTitle = document.getElementById('job_title');
+  const keywordsInput = document.getElementById('keywords');
+  const suggestedDiv = document.getElementById('suggested');
+  const suggestBtn = document.getElementById('suggestBtn');
+  const form = document.getElementById('resumeForm');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Show filename
+  resumeInput.addEventListener('change', () => {
+    const f = resumeInput.files[0];
+    if (!f) { fileCount.textContent = 'No file selected'; return; }
+    fileCount.textContent = `${f.name} • ${(f.size/1024/1024).toFixed(2)} MB`;
+  });
+
+  // When template selected -> fill job description
+  jobTemplate.addEventListener('change', () => {
+    if (jobTemplate.value) {
+      jobDesc.value = jobTemplate.value;
+      // optional: set short job title based on template
+      jobTitle.value = jobTemplate.options[jobTemplate.selectedIndex].text.split('(')[0].trim();
+    }
+  });
+
+  // Keyword suggestion: extract most frequent content words
+  const STOPWORDS = new Set([
+    'the','and','a','an','to','of','in','on','for','with','is','are','be','by','that','this','as','or','from','at','will','we',
+    'you','your','our','have','has','it','was','but','which','their','they','them','such','can','using','use','using','experience','experience.'
+  ]);
+
+  function suggestKeywords(text, max=8) {
+    if (!text) return [];
+    const words = text
+      .replace(/[^\w\s]/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !STOPWORDS.has(w));
+    const freq = {};
+    for (const w of words) freq[w] = (freq[w] || 0) + 1;
+    const entries = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, max);
+    return entries.map(e => e[0]);
+  }
+
+  function renderSuggested(tags) {
+    suggestedDiv.innerHTML = '';
+    if (!tags.length) {
+      suggestedDiv.innerHTML = '<p class="hint">No suggestions — try a longer description.</p>';
+      return;
+    }
+    tags.forEach(t => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.textContent = t;
+      chip.addEventListener('click', () => {
+        // add into keywordsInput if not present
+        const current = keywordsInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+        if (!current.includes(t)) {
+          current.push(t);
+          keywordsInput.value = current.join(', ');
+        }
+      });
+      suggestedDiv.appendChild(chip);
+    });
+    const info = document.createElement('p');
+    info.className = 'hint mt-2';
+    info.textContent = 'Click a suggestion to add it to the keyword box above.';
+    suggestedDiv.appendChild(info);
+  }
+
+  suggestBtn.addEventListener('click', () => {
+    const tags = suggestKeywords(jobDesc.value, 8);
+    renderSuggested(tags);
+  });
+
+  // Simple client validation + AJAX upload with progress
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+
+    // Validate file and description and keywords
+    const file = resumeInput.files[0];
+    if (!file) { alert('Please select a resume file (PDF/JPG/PNG).'); return; }
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowed.includes(file.type)) { alert('Only PDF, JPG, PNG files are allowed.'); return; }
+    const maxMB = 8;
+    if (file.size > maxMB * 1024 * 1024) { alert(`File exceeds ${maxMB}MB limit.`); return; }
+
+    const desc = jobDesc.value.trim();
+    if (!desc || desc.length < 15) { alert('Please enter a detailed job description (at least 15 characters).'); return; }
+
+    // Ensure keywords exist; if empty, generate suggestions automatically
+    if (!keywordsInput.value.trim()) {
+      const auto = suggestKeywords(desc, 6);
+      keywordsInput.value = auto.join(', ');
+      renderSuggested(auto);
+    }
+
+    // sync job_title (if empty, try to set from description first line)
+    if (!jobTitle.value.trim()) {
+      jobTitle.value = desc.split('\n')[0].slice(0,80);
+    }
+
+    // Build formdata
+    const fd = new FormData();
+    fd.append('resume', file);
+    fd.append('job_desc', desc);
+    fd.append('keywords', keywordsInput.value);
+    fd.append('job_title', jobTitle.value);
+
+    // UI lock
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
+    progressWrap.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = '';
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', form.action, true);
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + '%';
+        progressText.textContent = `Uploading — ${pct}%`;
+      }
+    };
+
+    xhr.onload = function() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Analyze Resume';
+      if (xhr.status === 200 || xhr.status === 302) {
+        // success — redirect to results (server might redirect)
+        window.location.href = '/results';
+      } else {
+        progressText.textContent = 'Upload failed. Try again.';
+        alert('Upload failed: ' + (xhr.responseText || xhr.statusText));
+      }
+    };
+
+    xhr.onerror = function() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Analyze Resume';
+      progressText.textContent = 'Upload failed.';
+      alert('Network error. Please try again.');
+    };
+
+    xhr.send(fd);
+  });
+</script>
+</body>
+</html>
