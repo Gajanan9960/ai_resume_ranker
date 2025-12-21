@@ -1,228 +1,171 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>AI Resume Ranker - Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
-  <style>
-    .navbar { display:flex;justify-content:space-between;align-items:center;background-color:#1e2a38;padding:1rem 2rem;position:sticky;top:0;z-index:1000;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-    .navbar .logo{font-size:1.2rem;font-weight:600;color:#fff;}
-    .navbar .nav-links{display:flex;gap:1.5rem;}
-    .navbar .nav-links a{color:#fff;text-decoration:none;padding:6px 0;position:relative;font-weight:600;transition:color 0.3s ease;}
-    .navbar .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:2px;background-color:#f1c40f;transition:width 0.3s ease;}
-    .navbar .nav-links a:hover,.navbar .nav-links a.active{color:#f1c40f;}
-    .navbar .nav-links a:hover::after,.navbar .nav-links a.active::after{width:100%;}
-  </style>
-</head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+{% extends "base.html" %}
 
-<header class="navbar">
-  <div class="logo">AI Resume Ranker</div>
-  <div class="nav-links">
-    <a href="/dashboard" class="active">Dashboard</a>
-    <a href="/results">Candidates</a>
-    <a href="/upload">Upload</a>
-    <a href="/about">About</a>
-    <a href="/logout">Logout</a>
-  </div>
-</header>
+{% block title %}Dashboard - Resume Ranker{% endblock %}
 
-<main class="max-w-7xl mx-auto px-6 py-8">
-
-  <!-- Filters -->
-  <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-    <form method="GET" action="/dashboard" class="flex gap-2 flex-wrap">
-      <select name="job_title" onchange="this.form.submit()" class="px-3 py-2 rounded-md border shadow-sm text-sm">
-        <option value="">Filter by Job Title</option>
-        {% for title in all_titles %}
-          <option value="{{ title }}" {% if selected_title == title %}selected{% endif %}>{{ title }}</option>
-        {% endfor %}
-      </select>
-      <select name="tag" onchange="this.form.submit()" class="px-3 py-2 rounded-md border shadow-sm text-sm">
-        <option value="">Filter by Tag</option>
-        {% for tag in all_tags %}
-          <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>{{ tag }}</option>
-        {% endfor %}
-      </select>
-    </form>
+{% block content %}
+<div class="dashboard-container">
+  <div class="card-header" style="margin-bottom: 2rem;">
+    <h1 class="card-title">Recruitment Overview</h1>
+    <p class="text-secondary">Real-time insights and top candidate rankings</p>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-    <div class="bg-white p-4 rounded-xl shadow text-center">
-      <p class="text-sm text-gray-500">Total Resumes</p>
-      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ total_resumes }}</h2>
+  <!-- Statistics Overview (Moved to Top) -->
+  {% if total_resumes > 0 %}
+  <div class="dashboard-grid" style="margin-bottom: 2.5rem;">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--primary-color);">👥</div>
+      <div>
+        <div class="stat-value">{{ total_resumes }}</div>
+        <div class="stat-label">Total Candidates</div>
+      </div>
     </div>
-    <div class="bg-white p-4 rounded-xl shadow text-center">
-      <p class="text-sm text-gray-500">Average Score</p>
-      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ average_score }}%</h2>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color);">📊</div>
+      <div>
+        <div class="stat-value">{{ average_score }}%</div>
+        <div class="stat-label">Average Score</div>
+      </div>
     </div>
-    <div class="bg-white p-4 rounded-xl shadow text-center">
-      <p class="text-sm text-gray-500">Top Candidates (≥85%)</p>
-      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ high_score_pct }}%</h2>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning-color);">⭐</div>
+      <div>
+        <div class="stat-value">{{ high_score_pct }}%</div>
+        <div class="stat-label">High Potential</div>
+      </div>
     </div>
-    <div class="bg-white p-4 rounded-xl shadow text-center">
-      <p class="text-sm text-gray-500">Tags</p>
-      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ tag_counts|length }}</h2>
-    </div>
-    <div class="bg-white p-4 rounded-xl shadow text-center">
-      <p class="text-sm text-gray-500">Date</p>
-      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{ now.strftime('%b %d, %Y') }}</h2>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">🎯</div>
+      <div>
+        <div class="stat-value">{{ tag_counts.get('Top Candidate', 0) + tag_counts.get('Shortlisted', 0) }}</div>
+        <div class="stat-label">Interview Ready</div>
+      </div>
     </div>
   </div>
+  {% endif %}
 
-  <!-- Shortlisted Candidates -->
-  <div class="bg-white p-6 rounded-xl shadow mb-10">
-    <h3 class="text-lg font-semibold mb-4">Shortlisted Candidates</h3>
-    <div class="overflow-x-auto">
-      <table id="shortlistTable" class="min-w-full text-sm border border-gray-200 rounded-lg shadow-sm">
-        <thead class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
-          <tr>
-            <th class="px-4 py-2 border-b">Name</th>
-            <th class="px-4 py-2 border-b">Score</th>
-            <th class="px-4 py-2 border-b">Job Role</th>
-            <th class="px-4 py-2 border-b">Email</th>
-            <th class="px-4 py-2 border-b">Tag</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-800">
-          {% for c in shortlisted_candidates %}
-          <tr class="hover:bg-gray-50 border-t">
-            <td class="px-4 py-2 border-b">{{ c.name }}</td>
-            <td class="px-4 py-2 border-b">{{ c.score }}</td>
-            <td class="px-4 py-2 border-b">{{ c.job_title or '—' }}</td>
-            <td class="px-4 py-2 border-b">{{ c.email or '—' }}</td>
-            <td class="px-4 py-2 border-b">{{ c.tag or '—' }}</td>
-          </tr>
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 class="card-title">Top 10 Candidates</h2>
+      <a href="{{ url_for('results') }}" class="btn btn-secondary btn-sm">View All Candidates →</a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <a href="{{ url_for('dashboard') }}" class="filter-tab {% if not tag_filter %}active{% endif %}">
+        All
+      </a>
+      <a href="{{ url_for('dashboard', tag='Top Candidate') }}"
+        class="filter-tab {% if tag_filter == 'Top Candidate' %}active{% endif %}">
+        Top Candidates
+      </a>
+      <a href="{{ url_for('dashboard', tag='Shortlisted') }}"
+        class="filter-tab {% if tag_filter == 'Shortlisted' %}active{% endif %}">
+        Shortlisted
+      </a>
+      <a href="{{ url_for('dashboard', tag='Review') }}"
+        class="filter-tab {% if tag_filter == 'Review' %}active{% endif %}">
+        Review
+      </a>
+      <a href="{{ url_for('dashboard', tag='Rejected') }}"
+        class="filter-tab {% if tag_filter == 'Rejected' %}active{% endif %}">
+        Rejected
+      </a>
+    </div>
+
+    <!-- Job Title Filter -->
+    {% if all_titles %}
+    <div style="margin: 0 0 1.5rem 0;">
+      <form method="GET" style="display: flex; gap: 1rem; align-items: center;">
+        <select name="job_title" class="form-control" style="max-width: 300px;" onchange="this.form.submit()">
+          <option value="">All Job Roles</option>
+          {% for title in all_titles %}
+          <option value="{{ title }}" {% if title_filter==title %}selected{% endif %}>{{ title }}</option>
           {% endfor %}
-          {% if shortlisted_candidates|length == 0 %}
-            <tr><td colspan="5" class="text-center text-gray-500 py-3">No shortlisted candidates yet.</td></tr>
-          {% endif %}
-        </tbody>
-      </table>
+        </select>
+        {% if tag_filter %}
+        <input type="hidden" name="tag" value="{{ tag_filter }}">
+        {% endif %}
+      </form>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- Charts -->
-  <div class="grid md:grid-cols-3 gap-6 mb-10">
-    <div class="md:col-span-2 bg-white p-6 rounded-xl shadow">
-      <h3 class="text-lg font-semibold mb-4">Resume Upload Trends</h3>
-      <canvas id="processingChart" height="140"></canvas>
-    </div>
-    <div class="bg-white p-6 rounded-xl shadow">
-      <h3 class="text-lg font-semibold mb-4">Tag Distribution</h3>
-      <canvas id="tagChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Top Skills -->
-  <div class="bg-white p-6 rounded-xl shadow mb-10">
-    <h3 class="text-lg font-semibold mb-4">Top Skills (Matched)</h3>
-    {% for skill in top_skills %}
-    <div class="mb-3">
-      <div class="flex justify-between text-sm mb-1">
-        <span>{{ skill.name }}</span>
-        <span>{{ skill.count }}</span>
-      </div>
-      <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ skill.percent or 0 }}%"></div>
-      </div>
-    </div>
-    {% else %}
-      <p class="text-sm text-gray-500">No skill data available.</p>
-    {% endfor %}
-  </div>
-
-  <!-- Top Candidates -->
-  <div class="bg-white p-6 rounded-xl shadow mb-10">
-    <h3 class="text-lg font-semibold mb-4">Top Candidates</h3>
-    <div class="overflow-x-auto">
-      <table id="candidateTable" class="min-w-full text-sm border border-gray-200 rounded-lg shadow-sm">
-        <thead class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider">
+    <!-- Candidates Table -->
+    {% if resumes %}
+    <div class="table-container">
+      <table class="table">
+        <thead>
           <tr>
-            <th class="px-4 py-2 border-b">Name</th>
-            <th class="px-4 py-2 border-b">Score</th>
-            <th class="px-4 py-2 border-b">Tag</th>
-            <th class="px-4 py-2 border-b">Job Title</th>
-            <th class="px-4 py-2 border-b">Uploaded</th>
-            <th class="px-4 py-2 border-b">Matched Skills</th>
+            <th>Rank</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Score</th>
+            <th>Email</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {% for c in top_candidates %}
-          <tr class="hover:bg-gray-50 border-t">
-            <td class="px-4 py-2 border-b">{{ c.name }}</td>
-            <td class="px-4 py-2 border-b">{{ c.score }}</td>
-            <td class="px-4 py-2 border-b">{{ c.tag or '—' }}</td>
-            <td class="px-4 py-2 border-b">{{ c.job_title or '—' }}</td>
-            <td class="px-4 py-2 border-b">{{ c.uploaded or '—' }}</td>
-            <td class="px-4 py-2 border-b">{{ c.matched_skills | join(', ') }}</td>
+          {% for resume in resumes %}
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-secondary);">#{{ loop.index }}</div>
+            </td>
+            <td>
+              <div style="font-weight: 600;">{{ resume.name }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ resume.uploaded_str }}</div>
+            </td>
+            <td>{{ resume.job_title }}</td>
+            <td>
+              <span
+                class="tag {% if resume.tag == 'Top Candidate' %}tag-success{% elif resume.tag == 'Shortlisted' %}tag-success{% elif resume.tag == 'Review' %}tag-warning{% else %}tag-danger{% endif %}">
+                {{ resume.tag }}
+              </span>
+            </td>
+            <td>
+              <div
+                style="font-weight: 700; color: {% if resume.score >= 80 %}var(--success-color){% elif resume.score >= 65 %}#3b82f6{% elif resume.score >= 45 %}var(--warning-color){% else %}var(--danger-color){% endif %};">
+                {{ resume.score }}%
+              </div>
+            </td>
+            <td>
+              {% if resume.email != 'N/A' %}
+              <a href="mailto:{{ resume.email }}" style="color: var(--primary-color); text-decoration: none;">{{
+                resume.email }}</a>
+              {% else %}
+              <span class="text-secondary">N/A</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.5rem;">
+                {% if resume.email != 'N/A' %}
+                <form method="POST" action="{{ url_for('send_email_to_candidate', resume_id=resume._id) }}">
+                  <button type="submit" class="btn btn-primary btn-sm">
+                    Send Mail
+                  </button>
+                </form>
+                {% else %}
+                <button class="btn btn-secondary btn-sm" disabled title="No email found">
+                  Send Mail
+                </button>
+                {% endif %}
+                <a href="{{ url_for('serve_resume', filename=resume.filename) }}" target="_blank"
+                  class="btn btn-secondary btn-sm" title="View Resume">
+                  📄
+                </a>
+              </div>
+            </td>
           </tr>
           {% endfor %}
-          {% if top_candidates|length == 0 %}
-            <tr><td colspan="6" class="text-center text-gray-500 py-3">No top candidates found.</td></tr>
-          {% endif %}
         </tbody>
       </table>
     </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+      <p style="font-size: 1.125rem;">No candidates found{% if tag_filter %} with status "{{ tag_filter }}"{% endif %}.
+      </p>
+      <a href="{{ url_for('upload') }}" class="btn btn-primary" style="margin-top: 1rem;">Upload Resumes</a>
+    </div>
+    {% endif %}
   </div>
-
-  <!-- Recent Activity -->
-  <div class="bg-white p-6 rounded-xl shadow">
-    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
-    <ul>
-      {% for item in recent %}
-      <li class="mb-2 text-sm text-gray-700">{{ item.message }} <span class="text-xs text-gray-400">({{ item.time }})</span></li>
-      {% else %}
-      <p class="text-sm text-gray-500">No recent uploads yet.</p>
-      {% endfor %}
-    </ul>
-  </div>
-</main>
-
-<!-- Charts -->
-<script>
-const uploadCtx = document.getElementById('processingChart').getContext('2d');
-new Chart(uploadCtx, {
-  type: 'line',
-  data: { labels: {{ dates|safe }}, datasets: [{
-    label: 'Resumes Uploaded',
-    data: {{ counts|safe }},
-    fill: true,
-    backgroundColor:'rgba(59,130,246,0.2)',
-    borderColor:'rgba(59,130,246,1)', pointBackgroundColor:'rgba(59,130,246,1)',
-    borderWidth:2, tension:0.4
-  }]},
-  options:{responsive:true,plugins:{legend:{display:false}}}
-});
-
-const tagLabels={{ tag_counts.keys()|list|safe }};
-const tagData={{ tag_counts.values()|list|safe }};
-if(tagLabels.length && tagData.length){
-  new Chart(document.getElementById('tagChart').getContext('2d'),{
-    type:'pie',
-    data:{labels:tagLabels,datasets:[{data:tagData,backgroundColor:['#4F46E5','#06B6D4','#10B981','#F59E0B','#EF4444','#A78BFA','#F472B6','#34D399']}]},
-    options:{plugins:{legend:{position:'bottom'}}}
-  });
-}else{
-  document.getElementById('tagChart').outerHTML="<p class='text-sm text-gray-500 p-4'>No tag data available.</p>";
-}
-
-$(document).ready(()=> {
-  ['#candidateTable','#shortlistTable'].forEach(id=>{
-    if(!$.fn.DataTable.isDataTable(id)){
-      $(id).DataTable({responsive:true,dom:'Bfrtip',buttons:['copy','csv','excel']});
-    }
-  });
-});
-</script>
-</body>
-</html>
+</div>
+{% endblock %}

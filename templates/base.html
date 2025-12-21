@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Resume Ranker{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{{ url_for('index') }}" class="brand">Resume<span class="brand-highlight">Ranker</span></a>
+            <div class="nav-links">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('upload') }}" class="nav-item {% if active_page == 'upload' %}active{% endif %}">Upload</a>
+                    <a href="{{ url_for('results') }}" class="nav-item {% if active_page == 'results' %}active{% endif %}">Results</a>
+                    <a href="{{ url_for('about') }}" class="nav-item {% if active_page == 'about' %}active{% endif %}">About</a>
+                    <a href="{{ url_for('logout') }}" class="nav-item btn-logout">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-item">Login</a>
+                    <a href="{{ url_for('register') }}" class="nav-item btn-primary">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{ now.year if now else 2023 }} Resume Ranker AI. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

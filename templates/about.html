@@ -1,132 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>About - AI Resume Ranker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #eef2f7;
-        }
+{% extends "base.html" %}
 
-        .navbar {
-            background-color: #0e1525;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+{% block title %}About - Resume Ranker{% endblock %}
 
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            margin-left: 2rem;
-            font-weight: 500;
-            font-size: 1.1rem;
-        }
-
-        .navbar a.active {
-            color: #fcd34d;
-        }
-
-        .container {
-            max-width: 90%;
-            margin: 3rem auto;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 1.25rem;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        p, ul, li {
-            font-size: 1.25rem;
-            line-height: 1.8;
-        }
-
-        ul {
-            padding-left: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .emoji-section {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-top: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .contact-link {
-            color: #007bff;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        @media screen and (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .navbar a {
-                margin: 0.5rem 0;
-            }
-
-            .container {
-                padding: 1.5rem;
-            }
-
-            h2 {
-                font-size: 2rem;
-            }
-
-            p, li {
-                font-size: 1.1rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div><strong>AI Resume Ranker</strong></div>
-        <div>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/upload">Upload</a>
-            <a href="/results">Candidates</a>
-            <a class="active" href="/about">About</a>
-            <a href="/logout">Logout</a>
-        </div>
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">About Resume Ranker AI</h1>
     </div>
+    <div style="max-width: 800px;">
+        <p style="margin-bottom: 1rem;">
+            Resume Ranker AI is an intelligent recruitment tool designed to streamline the hiring process.
+            By leveraging advanced Natural Language Processing (NLP) and Machine Learning algorithms,
+            it automatically analyzes resumes against job descriptions to identify the most suitable candidates.
+        </p>
 
-    <div class="container">
-        <h2>About AI Resume Ranker</h2>
-        <p><strong>AI Resume Ranker</strong> is a powerful resume screening platform designed for recruiters and hiring teams. It uses AI and natural language processing to automatically parse, analyze, and rank candidate resumes based on job-specific skills and relevance.</p>
-        
-        <div class="emoji-section">✨ Features</div>
-        <ul>
-            <li>Automatic parsing and skill extraction from PDF/image resumes.</li>
-            <li>Semantic matching using Sentence-BERT and curated skill synonyms.</li>
-            <li>Tag-based dashboard filtering, smart scoring, and top candidate badges.</li>
-            <li>Support for CSV/Excel export of filtered data.</li>
-            <li>Admin login, job title filters, and real-time candidate insights.</li>
+        <h3 style="margin: 1.5rem 0 1rem;">Key Features</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+            <li><strong>Automated Scoring:</strong> Instantly scores resumes based on relevance to the job description.
+            </li>
+            <li><strong>Skill Matching:</strong> Extracts and compares technical skills to ensure candidate
+                qualifications match requirements.</li>
+            <li><strong>Semantic Analysis:</strong> Uses sentence transformers to understand the context and meaning
+                behind the text, not just keyword matching.</li>
+            <li><strong>Efficient Filtering:</strong> Sort and filter candidates by score, status, or job role to
+                quickly find top talent.</li>
         </ul>
 
-        <div class="emoji-section">🧠 How It Works</div>
-        <p>Uploaded resumes are processed using OCR (for images) and NLP pipelines to extract skills and experiences. These are semantically compared to job requirements using transformer-based models. The result is a ranked list of candidates optimized for relevance and technical match.</p>
-
-        <div class="emoji-section">📬 Get in Touch</div>
-        <p>For questions, feedback, or collaboration, contact us at <a class="contact-link" href="mailto:support@airesumeranker.com">support@airesumeranker.com</a>.</p>
+        <h3 style="margin: 1.5rem 0 1rem;">How It Works</h3>
+        <ol style="margin-left: 1.5rem;">
+            <li><strong>Upload:</strong> Recruiters upload candidate resumes (PDF/Image) and provide a job description.
+            </li>
+            <li><strong>Analyze:</strong> The system extracts text, identifies skills, and computes a semantic
+                similarity score.</li>
+            <li><strong>Rank:</strong> Candidates are ranked and categorized (Top Candidate, Shortlisted, etc.) based on
+                their scores.</li>
+            <li><strong>Review:</strong> Recruiters can view detailed results, filter candidates, and export data for
+                further processing.</li>
+        </ol>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
