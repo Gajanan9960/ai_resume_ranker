@@ -5,7 +5,7 @@ sentence-transformers==3.0.1
 pdfminer.six==20221105
 opencv-python-headless==4.9.0.80
 pytesseract==0.3.10
-Pillow==10.3.0
+Pillow==12.2.0
 spacy==3.7.4
 pandas==2.2.2
 MarkupSafe==2.1.5
