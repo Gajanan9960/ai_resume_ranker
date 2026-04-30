@@ -21,6 +21,8 @@
                     <a href="{{ url_for('about') }}" class="nav-item {% if active_page == 'about' %}active{% endif %}">About</a>
                     <a href="{{ url_for('logout') }}" class="nav-item btn-logout">Logout</a>
                 {% else %}
+                    <a href="{{ url_for('home') }}" class="nav-item {% if active_page == 'home' %}active{% endif %}">Home</a>
+                    <a href="{{ url_for('about') }}" class="nav-item {% if active_page == 'about' %}active{% endif %}">About</a>
                     <a href="{{ url_for('login') }}" class="nav-item">Login</a>
                     <a href="{{ url_for('register') }}" class="nav-item btn-primary">Register</a>
                 {% endif %}
