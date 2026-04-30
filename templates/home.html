@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}AI Resume Ranker – Smarter Hiring, Faster Shortlisting{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div style="text-align: center; padding: 5rem 1rem 3rem;">
+  <h1 style="font-size: 2.75rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; margin-bottom: 1rem;">
+    Hire Smarter with <span style="color: var(--primary-color);">AI-Powered</span> Resume Ranking
+  </h1>
+  <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 640px; margin: 0 auto 2rem;">
+    Stop manually sifting through hundreds of resumes. Upload your candidates' resumes, paste the job description,
+    and let our AI rank and shortlist the best matches in seconds.
+  </p>
+  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+    <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1rem;">
+      Get Started Free
+    </a>
+    <a href="{{ url_for('login') }}" class="btn btn-secondary" style="padding: 0.85rem 2rem; font-size: 1rem;">
+      Login
+    </a>
+  </div>
+</div>
+
+<!-- Problem Statement Banner -->
+<div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: var(--radius-lg); padding: 2.5rem 2rem; margin: 0 0 3rem; text-align: center;">
+  <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem;">The Problem We Solve</h2>
+  <p style="color: var(--text-secondary); max-width: 700px; margin: 0 auto; font-size: 1.05rem;">
+    Recruiters spend an average of <strong>6 seconds</strong> scanning a single resume, and large hiring drives
+    generate hundreds of applications. Manual screening is slow, inconsistent, and biased. Qualified candidates
+    slip through the cracks while recruiters are overwhelmed.
+    <br><br>
+    <strong>AI Resume Ranker</strong> automates the screening step — using semantic NLP and skill-matching to objectively
+    score every resume against the job description, so your team focuses only on the candidates who matter.
+  </p>
+</div>
+
+<!-- How It Works -->
+<div style="margin-bottom: 3rem;">
+  <h2 style="text-align: center; font-size: 1.75rem; font-weight: 700; margin-bottom: 2rem;">How It Works</h2>
+  <div class="dashboard-grid">
+    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1.75rem;">
+      <div style="font-size: 2rem;">📋</div>
+      <h3 style="font-weight: 700;">1. Paste the Job Description</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Choose from popular roles or enter a custom job description and required skills for the position you are hiring for.</p>
+    </div>
+    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1.75rem;">
+      <div style="font-size: 2rem;">📤</div>
+      <h3 style="font-weight: 700;">2. Upload Resumes</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Upload one or many resumes in PDF or image format. The system extracts text automatically — no manual copy-paste needed.</p>
+    </div>
+    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1.75rem;">
+      <div style="font-size: 2rem;">🤖</div>
+      <h3 style="font-weight: 700;">3. AI Scores &amp; Ranks</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Our engine uses Sentence-BERT semantic similarity and keyword matching to score each resume and assign a status: Top Candidate, Shortlisted, Review, or Rejected.</p>
+    </div>
+    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1.75rem;">
+      <div style="font-size: 2rem;">🎯</div>
+      <h3 style="font-weight: 700;">4. Review &amp; Act</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Filter, sort, and review ranked candidates on your dashboard. Send personalised emails directly, or export results to Excel/CSV for your team.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Highlights -->
+<div class="card" style="margin-bottom: 3rem;">
+  <div class="card-header">
+    <h2 class="card-title">Key Features</h2>
+  </div>
+  <div class="dashboard-grid" style="margin-top: 1.5rem;">
+    {% set features = [
+      ("🧠", "Semantic NLP Scoring", "Goes beyond keywords — understands the meaning behind text using state-of-the-art Sentence-BERT transformers."),
+      ("🔍", "Skill Gap Analysis", "Instantly shows which required skills a candidate has and which are missing, saving hours of manual review."),
+      ("📊", "Recruiter Dashboard", "Real-time overview of all candidates, score distributions, and top-skill frequency charts."),
+      ("📧", "One-Click Email", "Send status emails (offer, shortlist, rejection) to candidates directly from the dashboard."),
+      ("📥", "Export to Excel / CSV", "Download your filtered results for reporting, collaboration, or further analysis."),
+      ("🔒", "Secure &amp; Private", "Each recruiter sees only their own data. Passwords are hashed and files are access-controlled.")
+    ] %}
+    {% for icon, title, desc in features %}
+    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+      <div style="font-size: 1.75rem; flex-shrink: 0;">{{ icon }}</div>
+      <div>
+        <h4 style="font-weight: 600; margin-bottom: 0.25rem;">{{ title }}</h4>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">{{ desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- CTA -->
+<div style="text-align: center; padding: 3rem 1rem 4rem;">
+  <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem;">Ready to streamline your hiring?</h2>
+  <p style="color: var(--text-secondary); margin-bottom: 2rem;">Create a free account and analyse your first batch of resumes in under a minute.</p>
+  <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 0.9rem 2.5rem; font-size: 1.05rem;">
+    Create Free Account →
+  </a>
+</div>
+{% endblock %}

@@ -1,42 +1,77 @@
 {% extends "base.html" %}
 
-{% block title %}About - Resume Ranker{% endblock %}
+{% block title %}About - AI Resume Ranker{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h1 class="card-title">About Resume Ranker AI</h1>
+        <h1 class="card-title">About AI Resume Ranker</h1>
+        <p class="text-secondary">An intelligent tool built to take the pain out of resume screening</p>
     </div>
-    <div style="max-width: 800px;">
-        <p style="margin-bottom: 1rem;">
-            Resume Ranker AI is an intelligent recruitment tool designed to streamline the hiring process.
-            By leveraging advanced Natural Language Processing (NLP) and Machine Learning algorithms,
-            it automatically analyzes resumes against job descriptions to identify the most suitable candidates.
-        </p>
 
-        <h3 style="margin: 1.5rem 0 1rem;">Key Features</h3>
-        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
-            <li><strong>Automated Scoring:</strong> Instantly scores resumes based on relevance to the job description.
-            </li>
-            <li><strong>Skill Matching:</strong> Extracts and compares technical skills to ensure candidate
-                qualifications match requirements.</li>
-            <li><strong>Semantic Analysis:</strong> Uses sentence transformers to understand the context and meaning
-                behind the text, not just keyword matching.</li>
-            <li><strong>Efficient Filtering:</strong> Sort and filter candidates by score, status, or job role to
-                quickly find top talent.</li>
+    <div style="max-width: 820px; margin-top: 1.5rem;">
+
+        <h3 style="margin: 0 0 0.75rem;">🎯 The Problem</h3>
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+            Every open role attracts dozens — sometimes hundreds — of applications. Recruiters and hiring managers
+            spend enormous amounts of time reading through resumes manually, leading to:
+        </p>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+            <li>Inconsistent evaluation — different reviewers judge resumes differently</li>
+            <li>Slow time-to-hire — bottlenecks in the screening step delay the entire pipeline</li>
+            <li>Missed talent — strong candidates are overlooked when reviewers are fatigued</li>
+            <li>Bias — unconscious patterns affect who gets shortlisted</li>
         </ul>
 
-        <h3 style="margin: 1.5rem 0 1rem;">How It Works</h3>
-        <ol style="margin-left: 1.5rem;">
-            <li><strong>Upload:</strong> Recruiters upload candidate resumes (PDF/Image) and provide a job description.
-            </li>
-            <li><strong>Analyze:</strong> The system extracts text, identifies skills, and computes a semantic
-                similarity score.</li>
-            <li><strong>Rank:</strong> Candidates are ranked and categorized (Top Candidate, Shortlisted, etc.) based on
-                their scores.</li>
-            <li><strong>Review:</strong> Recruiters can view detailed results, filter candidates, and export data for
-                further processing.</li>
+        <h3 style="margin: 1.5rem 0 0.75rem;">💡 Our Solution</h3>
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+            <strong>AI Resume Ranker</strong> automates the first-pass screening step using Natural Language Processing
+            and Machine Learning. It reads every resume in seconds, measures how well each candidate matches the job
+            description, and produces an objective ranked list — so your team can focus its human judgement on the
+            candidates who actually deserve a closer look.
+        </p>
+
+        <h3 style="margin: 1.5rem 0 0.75rem;">⚙️ How the Scoring Works</h3>
+        <p style="margin-bottom: 0.75rem; color: var(--text-secondary);">
+            Each resume receives a composite score built from four components:
+        </p>
+        <ol style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+            <li><strong>Keyword Match (40%)</strong> — How many of the required skills and keywords appear in the resume.</li>
+            <li><strong>Semantic Similarity (40%)</strong> — How closely the resume's meaning aligns with the job description,
+                measured using Sentence-BERT embeddings. This catches synonyms and related concepts that simple keyword
+                matching misses.</li>
+            <li><strong>Keyword Density (10%)</strong> — Whether the matched keywords appear naturally throughout the text
+                rather than being crammed in once.</li>
+            <li><strong>Resume Quality (10%)</strong> — A length and completeness signal based on word count.</li>
         </ol>
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+            Based on the final score, each candidate is automatically tagged:
+            <span style="font-weight:600; color: var(--success-color);">Top Candidate (≥80%)</span>,
+            <span style="font-weight:600; color:#3b82f6;">Shortlisted (≥65%)</span>,
+            <span style="font-weight:600; color: var(--warning-color);">Review (≥45%)</span>, or
+            <span style="font-weight:600; color: var(--danger-color);">Rejected (&lt;45%)</span>.
+        </p>
+
+        <h3 style="margin: 1.5rem 0 0.75rem;">🚀 Key Features</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+            <li><strong>Multi-format support:</strong> Accepts PDF and image resumes (JPG, PNG) with automatic text extraction.</li>
+            <li><strong>Skill Gap Report:</strong> Shows matched skills and highlights missing ones for each candidate.</li>
+            <li><strong>Recruiter Dashboard:</strong> Real-time statistics — total candidates, average score, high-potential rate, and interview-ready count.</li>
+            <li><strong>One-click candidate email:</strong> Send tailored status emails (offer, shortlist, review, or rejection) directly from the dashboard.</li>
+            <li><strong>Export:</strong> Download filtered results as Excel or CSV for sharing with your team.</li>
+            <li><strong>Private &amp; isolated:</strong> Your resumes and data are visible only to your account.</li>
+        </ul>
+
+        <h3 style="margin: 1.5rem 0 0.75rem;">🛠️ Technology Stack</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+            <li><strong>Backend:</strong> Python, Flask</li>
+            <li><strong>NLP / AI:</strong> Sentence-BERT (<code>all-MiniLM-L6-v2</code>), spaCy (<code>en_core_web_lg</code>)</li>
+            <li><strong>Resume Parsing:</strong> pdfminer.six (PDF), pytesseract + Pillow (images)</li>
+            <li><strong>Database:</strong> MongoDB Atlas</li>
+            <li><strong>Export:</strong> pandas, XlsxWriter</li>
+            <li><strong>Frontend:</strong> Jinja2 templates, vanilla CSS</li>
+        </ul>
+
     </div>
 </div>
 {% endblock %}
