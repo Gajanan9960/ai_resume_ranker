@@ -1,20 +1,27 @@
 import os
 import io
+import re
 import csv
-import math
+import urllib.parse
 from math import ceil
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import Counter
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, jsonify, send_from_directory
+
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, session, flash, send_file, send_from_directory,
+)
 from flask_mail import Mail, Message
 import pymongo
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from pymongo import MongoClient, DESCENDING, ASCENDING
+from pymongo import MongoClient, DESCENDING
 from sentence_transformers import SentenceTransformer, util
 from pdfminer.high_level import extract_text
+from bson import ObjectId
+from PIL import Image
+import pytesseract
 import pandas as pd
-import openpyxl
 import spacy
 from dotenv import load_dotenv
 
@@ -22,7 +29,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Change this in production
+app.secret_key = os.getenv("SECRET_KEY", os.urandom(32).hex())
 app.config["UPLOAD_FOLDER"] = "uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -36,7 +43,6 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 mail = Mail(app)
 
 # --- MongoDB Setup ---
-# MongoDB Atlas connection
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["resume_db"]
@@ -44,8 +50,15 @@ resumes_collection = db["resumes"]
 users_collection = db["users"]
 
 # NLP and Transformer models
-nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_sm")
 model = SentenceTransformer("all-MiniLM-L6-v2")
+
+# Standard job roles (matches upload.html)
+STANDARD_JOB_ROLES = [
+    "Python Developer", "Full Stack Developer", "Data Scientist",
+    "Machine Learning Engineer", "DevOps Engineer", "Frontend Developer",
+    "Backend Developer", "Product Manager", "UI/UX Designer"
+]
 
 # ------------------ HELPER FUNCTIONS ------------------
 def extract_text_from_pdf(file_path):
@@ -55,11 +68,21 @@ def extract_text_from_pdf(file_path):
     except Exception:
         return ""
 
+
+def extract_text_from_image(file_path):
+    """Extract text from an image file using OCR (pytesseract + Pillow)."""
+    try:
+        img = Image.open(file_path)
+        return pytesseract.image_to_string(img)
+    except Exception:
+        return ""
+
+
 def extract_email(text):
     """Extract an email address from resume text."""
-    import re
     match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
     return match.group(0) if match else "N/A"
+
 
 def humanize_time(dt):
     """Convert a datetime into a human-friendly relative time."""
@@ -74,11 +97,12 @@ def humanize_time(dt):
     minutes = delta.seconds // 60
     return f"{minutes} minutes ago"
 
+
 def extract_technical_skills(text, keywords):
     """Extract technical skills with fuzzy matching and case-insensitive search."""
     found = []
     text_lower = text.lower()
-    
+
     for word in keywords:
         word_lower = word.lower().strip()
         # Check for exact match or word boundaries
@@ -86,33 +110,36 @@ def extract_technical_skills(text, keywords):
             found.append(word)
     return found
 
+
 def extract_keywords_from_text(text):
     """Extract important keywords from resume text using spaCy."""
     doc = nlp(text[:5000])  # Limit to first 5000 chars for performance
-    
+
     # Extract nouns, proper nouns, and technical terms
     keywords = []
     for token in doc:
         if token.pos_ in ['NOUN', 'PROPN'] and len(token.text) > 2:
             keywords.append(token.text)
-    
+
     # Extract entities (organizations, technologies, etc.)
     for ent in doc.ents:
         if ent.label_ in ['ORG', 'PRODUCT', 'GPE', 'SKILL']:
             keywords.append(ent.text)
-    
+
     return list(set(keywords))
+
 
 def semantic_similarity(text1, text2):
     """Calculate semantic similarity between two texts."""
     # Truncate texts to avoid memory issues
     text1 = text1[:2000]
     text2 = text2[:2000]
-    
+
     emb1 = model.encode(text1, convert_to_tensor=True)
     emb2 = model.encode(text2, convert_to_tensor=True)
     score = util.pytorch_cos_sim(emb1, emb2).item()
     return round(score * 100, 2)
+
 
 def keyword_density(text, keywords):
     """Calculate keyword density in text."""
@@ -122,6 +149,7 @@ def keyword_density(text, keywords):
     matches = sum(1 for word in keywords if word.lower() in text.lower())
     return matches / total if total > 0 else 0
 
+
 def weighted_resume_score(text, job_keywords, job_desc):
     """
     Calculate weighted resume score based on multiple factors.
@@ -129,27 +157,27 @@ def weighted_resume_score(text, job_keywords, job_desc):
     """
     if not text or not job_desc:
         return 25.0, [], "Rejected", job_keywords
-    
+
     # If no keywords provided, extract from job description
     if not job_keywords:
         job_keywords = extract_keywords_from_text(job_desc)[:20]  # Top 20 keywords
-    
+
     # Extract matched skills
     matched_skills = extract_technical_skills(text, job_keywords)
     unique_matches = list(set(matched_skills))
-    
+
     # Calculate keyword match score (40% weight)
     keyword_match_ratio = len(unique_matches) / len(job_keywords) if job_keywords else 0
     keyword_score = keyword_match_ratio * 40
-    
+
     # Calculate semantic similarity (40% weight)
     similarity = semantic_similarity(text, job_desc)
     semantic_score = (similarity / 100) * 40
-    
+
     # Calculate keyword density bonus (10% weight)
     density = keyword_density(text, job_keywords)
     density_score = density * 10
-    
+
     # Resume length and quality bonus (10% weight)
     word_count = len(text.split())
     length_score = 0
@@ -159,20 +187,20 @@ def weighted_resume_score(text, job_keywords, job_desc):
         length_score = 7
     else:
         length_score = 5
-    
+
     # Calculate total score
     total_score = keyword_score + semantic_score + density_score + length_score
-    
+
     # Apply bonuses and penalties
     if keyword_match_ratio >= 0.7:
         total_score *= 1.1  # 10% bonus for high keyword match
     elif keyword_match_ratio < 0.2:
         total_score *= 0.85  # 15% penalty for low keyword match
-    
+
     # Ensure score is within bounds
     final_score = min(max(total_score, 30), 98)
     final_score = round(final_score, 2)
-    
+
     # Determine tag based on score
     if final_score >= 80:
         tag = "Top Candidate"
@@ -182,24 +210,24 @@ def weighted_resume_score(text, job_keywords, job_desc):
         tag = "Review"
     else:
         tag = "Rejected"
-    
+
     # Get top matched skills (limit to 10)
     skill_counts = Counter(matched_skills)
     top_skills = [skill for skill, _ in skill_counts.most_common(10)]
-    
+
     # Calculate missing skills
     missing_skills = list(set(job_keywords) - set(top_skills))[:10]  # Limit to 10
-    
+
     return final_score, top_skills, tag, missing_skills
 
 
-# ------------------ AUTH ROUTES ------------------
 # ------------------ AUTH ROUTES ------------------
 @app.route("/")
 def index():
     if "user_id" in session:
         return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
+    return render_template("home.html")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -233,6 +261,7 @@ def register():
 
     return render_template("register.html")
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -252,11 +281,13 @@ def login():
 
     return render_template("login.html")
 
+
 @app.route("/logout")
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
+
 
 # ------------------ UPLOAD ROUTE ------------------
 @app.route("/upload", methods=["GET", "POST"])
@@ -278,7 +309,7 @@ def upload():
         # Validation
         if not uploaded_files or not job_desc:
             flash("Please upload at least one resume and provide a job description.", "danger")
-            return redirect(url_for("upload"))  # ✅ fixed: stay on same page
+            return redirect(url_for("upload"))
 
         uploaded_count = 0
 
@@ -312,7 +343,7 @@ def upload():
 
             # --- Extract Email ---
             email = extract_email(resume_text)
-            
+
             # --- Save to MongoDB ---
             resumes_collection.insert_one({
                 "name": os.path.splitext(filename)[0].title(),
@@ -337,17 +368,21 @@ def upload():
         else:
             flash("⚠️ No valid resumes were processed.", "warning")
 
-        return redirect(url_for("results"))  # ✅ only one redirect after success
+        return redirect(url_for("results"))
 
     except Exception as e:
         print("Upload error:", e)
         flash(f"❌ Upload failed due to an unexpected error: {str(e)}", "danger")
-        return redirect(url_for("upload"))  # ✅ fixed: redirect to upload, not results
+        return redirect(url_for("upload"))
+
+
 # ------------------ RESULTS PAGE ------------------
 @app.route("/results")
 def results():
     if "user_id" not in session:
         return redirect(url_for("login"))
+
+    uid = session["user_id"]
 
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 10))
@@ -356,12 +391,13 @@ def results():
     job_filter = request.args.get("job_filter", "").strip()
     sort_by = request.args.get("sort_by", "uploaded_at")
 
-    query = {}
+    query = {"user_id": uid}
     if search:
+        safe_search = re.escape(search)
         query["$or"] = [
-            {"filename": {"$regex": search, "$options": "i"}},
-            {"matched_skills": {"$regex": search, "$options": "i"}},
-            {"resume_text": {"$regex": search, "$options": "i"}}
+            {"name": {"$regex": safe_search, "$options": "i"}},
+            {"filename": {"$regex": safe_search, "$options": "i"}},
+            {"matched_skills": {"$regex": safe_search, "$options": "i"}},
         ]
     if tag_filter:
         query["tag"] = tag_filter
@@ -386,8 +422,11 @@ def results():
         r["uploaded_str"] = humanize_time(r.get("uploaded_at"))
         r["score"] = round(float(r.get("score", 0)), 2)
 
-    all_tags = sorted(filter(None, resumes_collection.distinct("tag")))
-    all_titles = sorted(filter(None, resumes_collection.distinct("job_title")))
+    all_tags = sorted(filter(None, resumes_collection.distinct("tag", {"user_id": uid})))
+
+    # Merge standard roles with any custom roles from DB
+    db_titles = resumes_collection.distinct("job_title", {"user_id": uid})
+    all_titles = sorted(list(set(STANDARD_JOB_ROLES + db_titles)))
 
     success = session.pop("upload_success", False)
 
@@ -407,15 +446,20 @@ def results():
         active_page="results"
     )
 
+
 # ------------------ EXPORT ROUTES ------------------
 @app.route("/export_excel")
 def export_excel():
     """Export filtered resumes as Excel file."""
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    uid = session["user_id"]
     job_filter = request.args.get("job_filter", "")
     tag_filter = request.args.get("tag", "")
     sort_by = request.args.get("sort_by", "uploaded_at")
 
-    query = {}
+    query = {"user_id": uid}
     if job_filter:
         query["job_title"] = job_filter
     if tag_filter:
@@ -431,6 +475,7 @@ def export_excel():
     for r in resumes:
         uploaded = r.get("uploaded_at")
         data.append({
+            "Candidate": r.get("name", "N/A"),
             "Filename": r.get("filename", "N/A"),
             "Job Title": r.get("job_title", "Unknown"),
             "Score (%)": round(float(r.get("score", 0.0)), 2),
@@ -453,14 +498,21 @@ def export_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+
 @app.route("/download/csv")
 def download_csv():
     """Export all resumes as CSV."""
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    uid = session["user_id"]
+
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Filename", "Job Title", "Score", "Tag", "Matched Skills", "Missing Skills"])
-    for r in resumes_collection.find():
+    writer.writerow(["Candidate", "Filename", "Job Title", "Score", "Tag", "Matched Skills", "Missing Skills"])
+    for r in resumes_collection.find({"user_id": uid}):
         writer.writerow([
+            r.get("name", "N/A"),
             r.get("filename", "N/A"),
             r.get("job_title", "Unknown"),
             r.get("score", 0),
@@ -476,30 +528,31 @@ def download_csv():
         mimetype="text/csv"
     )
 
-# ------------------ ADMIN DASHBOARD ------------------
+
+# ------------------ SEND EMAIL ------------------
 @app.route("/send_email/<resume_id>", methods=["POST"])
 def send_email_to_candidate(resume_id):
     """Send tailored email to candidate."""
     if "user_id" not in session:
         return redirect(url_for("login"))
-    
-    from bson import ObjectId
-    resume = resumes_collection.find_one({"_id": ObjectId(resume_id)})
-    
+
+    uid = session["user_id"]
+    resume = resumes_collection.find_one({"_id": ObjectId(resume_id), "user_id": uid})
+
     if not resume:
         flash("Resume not found.", "danger")
         return redirect(url_for("dashboard"))
-    
+
     email = resume.get("email", "N/A")
     if email == "N/A":
         flash("No email found for this candidate.", "warning")
         return redirect(url_for("dashboard"))
-    
+
     # Get tailored message based on tag
     tag = resume.get("tag", "Review")
     name = resume.get("name", "Candidate")
     job_title = resume.get("job_title", "the position")
-    
+
     email_templates = {
         "Top Candidate": f"""Dear {name},
 
@@ -513,7 +566,7 @@ Welcome aboard!
 
 Best regards,
 Recruitment Team""",
-        
+
         "Shortlisted": f"""Dear {name},
 
 Congratulations! We are pleased to inform you that your application for the {job_title} position has been shortlisted.
@@ -522,7 +575,7 @@ We were impressed with your qualifications and would like to invite you for the 
 
 Best regards,
 Recruitment Team""",
-        
+
         "Review": f"""Dear {name},
 
 Thank you for your interest in the {job_title} position. Your application is currently under active review by our hiring team.
@@ -531,7 +584,7 @@ We appreciate your patience and will notify you as soon as a decision has been m
 
 Best regards,
 Recruitment Team""",
-        
+
         "Rejected": f"""Dear {name},
 
 Thank you for giving us the opportunity to review your application for the {job_title} position.
@@ -543,22 +596,21 @@ We will keep your resume on file for future openings that may be a better fit. W
 Best regards,
 Recruitment Team"""
     }
-    
+
     message = email_templates.get(tag, email_templates["Review"])
     subject = f"Application Update - {job_title}"
 
     try:
         if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
-            raise Exception("SMTP credentials not configured")
+            raise Exception("SMTP credentials not configured (None or Empty)")
 
         msg = Message(subject, recipients=[email])
         msg.body = message
         mail.send(msg)
         flash(f"Email successfully sent to {name}!", "success")
     except Exception as e:
-        print(f"Email error: {e}")
+        print(f"Email sending failed: {e}")
         # Fallback to mailto if backend sending fails
-        import urllib.parse
         body = urllib.parse.quote(message)
         subject_enc = urllib.parse.quote(subject)
         mailto_link = f"mailto:{email}?subject={subject_enc}&body={body}"
@@ -567,15 +619,18 @@ Recruitment Team"""
 
     return redirect(url_for("dashboard"))
 
+
+# ------------------ DASHBOARD ------------------
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    uid = session["user_id"]
     tag_filter = request.args.get("tag")
     title_filter = request.args.get("job_title")
 
-    query = {}
+    query = {"user_id": uid}
     if tag_filter:
         query["tag"] = tag_filter
     if title_filter:
@@ -605,8 +660,11 @@ def dashboard():
 
     # --- Tag & title stats ---
     tag_counts = Counter([r.get("tag", "Unknown") for r in resumes])
-    all_tags = sorted(resumes_collection.distinct("tag"))
-    all_titles = sorted(resumes_collection.distinct("job_title"))
+    all_tags = sorted(resumes_collection.distinct("tag", {"user_id": uid}))
+
+    # Merge standard roles with any custom roles from DB
+    db_titles = resumes_collection.distinct("job_title", {"user_id": uid})
+    all_titles = sorted(list(set(STANDARD_JOB_ROLES + db_titles)))
 
     # --- Top 5 skills ---
     all_skills = [s for r in resumes for s in r.get("matched_skills", [])]
@@ -615,7 +673,7 @@ def dashboard():
 
     # --- Sort by Score (High to Low) ---
     resumes.sort(key=lambda x: x.get("score", 0), reverse=True)
-    
+
     # --- Top 10 for Display ---
     display_resumes = resumes[:10]
 
@@ -628,12 +686,12 @@ def dashboard():
 
     recent = [
         {
-            "message": f"New resume uploaded: {r.get('filename', 'N/A')}",
+            "message": f"New resume uploaded: {r.get('name', r.get('filename', 'N/A'))}",
             "time": r["uploaded_at"].strftime("%b %d, %Y %H:%M")
         }
         for r in recent_uploads
     ]
-    
+
     # Add humanized time to all resumes
     for r in resumes:
         r["uploaded_str"] = humanize_time(r.get("uploaded_at"))
@@ -654,24 +712,42 @@ def dashboard():
         recent=recent,
         now=datetime.now()
     )
+
+
 # ------------------ OTHER ROUTES ------------------
 @app.route("/clear_resumes", methods=["POST"])
 def clear_resumes():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    resumes_collection.delete_many({})
-    flash("All resumes cleared successfully.", "success")
+    resumes_collection.delete_many({"user_id": session["user_id"]})
+    flash("All your resumes cleared successfully.", "success")
     return redirect(url_for("results"))
+
 
 @app.route("/about")
 def about():
     return render_template("about.html")
 
+
 @app.route("/uploads/<filename>")
 def serve_resume(filename):
+    """Serve uploaded resume files — requires login and ownership."""
+    if "user_id" not in session:
+        flash("Please login to view resume files.", "warning")
+        return redirect(url_for("login"))
+
+    # Verify the file belongs to the logged-in user
+    uid = session["user_id"]
+    resume = resumes_collection.find_one({"filename": filename, "user_id": uid})
+    if not resume:
+        flash("File not found or access denied.", "danger")
+        return redirect(url_for("results"))
+
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
 
 # ------------------ MAIN ------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    port = int(os.environ.get("PORT", 5001))
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)

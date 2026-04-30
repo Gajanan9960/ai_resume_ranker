@@ -2,10 +2,22 @@ services:
   - type: web
     name: ai-resume-ranker
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
     startCommand: gunicorn app:app --workers=1 --threads=1 --timeout=120
     autoDeploy: true
     plan: free
     envVars:
       - key: PORT
-        value: 10000  # Optional: Render auto-assigns this; you can omit or use it if you bind manually
+        value: 10000
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.10.12"
