@@ -552,13 +552,14 @@ def send_email_to_candidate(resume_id):
     tag = resume.get("tag", "Review")
     name = resume.get("name", "Candidate")
     job_title = resume.get("job_title", "the position")
+    score = resume.get("score", "N/A")
 
     email_templates = {
         "Top Candidate": f"""Dear {name},
 
-Congratulations! We are thrilled to inform you that you have been selected for the {job_title} position at our company.
+Congratulations! We are thrilled to inform you that you have been selected as a top candidate for the {job_title} position at our company.
 
-Your impressive skills and experience stood out among the applicants, and we believe you will be a fantastic addition to our team.
+Your impressive resume achieved an outstanding match score of {score}%. Your skills align perfectly with our requirements, and your experience stood out prominently among the applicants. We believe you will be a fantastic addition to our team.
 
 We would like to schedule an onboarding meeting to discuss the next steps. Please let us know your availability for the coming week.
 
@@ -569,9 +570,11 @@ Recruitment Team""",
 
         "Shortlisted": f"""Dear {name},
 
-Congratulations! We are pleased to inform you that your application for the {job_title} position has been shortlisted.
+Congratulations! We are pleased to inform you that your application for the {job_title} position has been successfully shortlisted.
 
-We were impressed with your qualifications and would like to invite you for the next round of interviews. We will be sending you a calendar invite shortly.
+Your qualifications strongly align with the role, achieving a solid match score of {score}%. We were very impressed with your background and would like to invite you for the next round of interviews.
+
+We will be sending you a calendar invite shortly to arrange a convenient time.
 
 Best regards,
 Recruitment Team""",
@@ -580,7 +583,9 @@ Recruitment Team""",
 
 Thank you for your interest in the {job_title} position. Your application is currently under active review by our hiring team.
 
-We appreciate your patience and will notify you as soon as a decision has been made.
+Your resume is being evaluated against our specific criteria and currently holds a preliminary match score of {score}%. We are carefully considering your profile alongside other highly qualified candidates.
+
+We appreciate your patience and will notify you as soon as a final decision has been made.
 
 Best regards,
 Recruitment Team""",
@@ -589,9 +594,9 @@ Recruitment Team""",
 
 Thank you for giving us the opportunity to review your application for the {job_title} position.
 
-Although your qualifications are impressive, we have decided to move forward with other candidates who more closely match our current specific needs for this role.
+After careful consideration of all applicants, we have decided to move forward with other candidates who more closely match our specific needs for this role at this time. While your profile achieved a match score of {score}%, we found other candidates whose skills presented a closer fit for our current requirements.
 
-We will keep your resume on file for future openings that may be a better fit. We wish you the very best in your job search.
+We will keep your resume on file for future openings that may be a better match for your experience. We wish you the very best in your job search and professional endeavors.
 
 Best regards,
 Recruitment Team"""
