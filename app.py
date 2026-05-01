@@ -16,8 +16,7 @@ import pymongo
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient, DESCENDING
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer, util
 from pdfminer.high_level import extract_text
 from bson import ObjectId
 from PIL import Image
@@ -52,7 +51,7 @@ users_collection = db["users"]
 
 # NLP and Transformer models
 nlp = spacy.load("en_core_web_sm")
-# model = SentenceTransformer("all-MiniLM-L6-v2") # Removed for memory efficiency
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Standard job roles (matches upload.html)
 STANDARD_JOB_ROLES = [
@@ -131,17 +130,15 @@ def extract_keywords_from_text(text):
 
 
 def semantic_similarity(text1, text2):
-    """Calculate semantic similarity between two texts using TF-IDF."""
-        if not text1 or not text2:
-                    return 0.0
-                vectorizer = TfidfVectorizer()
-    try:
-                tfidf = vectorizer.fit_transform([text1, text2])
-                score = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]
-                return round(score * 100, 2)
-except Exception as e:
-        print(f"Similarity error: {e}")
-        return 0.0
+    """Calculate semantic similarity between two texts."""
+    # Truncate texts to avoid memory issues
+    text1 = text1[:2000]
+    text2 = text2[:2000]
+
+    emb1 = model.encode(text1, convert_to_tensor=True)
+    emb2 = model.encode(text2, convert_to_tensor=True)
+    score = util.pytorch_cos_sim(emb1, emb2).item()
+    return round(score * 100, 2)
 
 
 def keyword_density(text, keywords):
