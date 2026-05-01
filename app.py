@@ -241,6 +241,18 @@ def register():
             flash("All fields are required.", "danger")
             return redirect(url_for("register"))
 
+        if len(username) < 3 or not re.match(r"^[a-zA-Z0-9_]+$", username):
+            flash("Username must be at least 3 characters and contain only letters, numbers, and underscores.", "danger")
+            return redirect(url_for("register"))
+
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash("Invalid email format.", "danger")
+            return redirect(url_for("register"))
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters long.", "danger")
+            return redirect(url_for("register"))
+
         if password != confirm_password:
             flash("Passwords do not match.", "danger")
             return redirect(url_for("register"))
@@ -307,8 +319,18 @@ def upload():
         job_keywords = [kw.strip().lower() for kw in keywords_raw.split(",") if kw.strip()]
 
         # Validation
-        if not uploaded_files or not job_desc:
-            flash("Please upload at least one resume and provide a job description.", "danger")
+        if len(job_title) < 2:
+            flash("Job Role must be at least 2 characters long.", "danger")
+            return redirect(url_for("upload"))
+            
+        if len(job_desc) < 20:
+            flash("Job Description must be at least 20 characters long to provide meaningful analysis.", "danger")
+            return redirect(url_for("upload"))
+
+        # Check if there's actually a selected file
+        has_valid_file = any(f for f in uploaded_files if f and f.filename != "")
+        if not uploaded_files or not has_valid_file:
+            flash("Please select at least one valid resume file.", "danger")
             return redirect(url_for("upload"))
 
         uploaded_count = 0

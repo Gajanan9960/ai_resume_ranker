@@ -8,10 +8,10 @@
     <h1 class="card-title">Upload Resumes</h1>
   </div>
 
-  <form method="POST" enctype="multipart/form-data">
+  <form method="POST" enctype="multipart/form-data" id="uploadForm" onsubmit="return handleFormSubmit()">
     <div class="form-group">
       <label for="job_role_select" class="form-label">Select Job Role or Enter Custom</label>
-      <select id="job_role_select" class="form-control" onchange="updateJobRole()">
+      <select id="job_role_select" class="form-control" onchange="updateJobRole()" required>
         <option value="">-- Select a Job Role --</option>
         <option value="Python Developer">Python Developer</option>
         <option value="Full Stack Developer">Full Stack Developer</option>
@@ -29,13 +29,13 @@
     <div class="form-group">
       <label for="job_role" class="form-label">Job Role</label>
       <input type="text" id="job_role" name="job_role" class="form-control" placeholder="e.g. Senior Python Developer"
-        required>
+        required minlength="2" maxlength="100">
     </div>
 
     <div class="form-group">
       <label for="job_description" class="form-label">Job Description</label>
       <textarea id="job_description" name="job_description" class="form-control" rows="8"
-        placeholder="Paste the full job description here..." required></textarea>
+        placeholder="Paste the full job description here..." required minlength="20"></textarea>
     </div>
 
     <div class="form-group">
@@ -45,18 +45,24 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label">Resume Files</label>
+      <label class="form-label">Resume Files <span class="text-danger">*</span></label>
       <div class="upload-area" onclick="document.getElementById('resume').click()">
         <div class="upload-icon">📄</div>
         <h3>Click to Upload Resumes</h3>
         <p class="text-secondary">Supported formats: PDF, JPG, PNG</p>
         <input type="file" id="resume" name="resume" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;"
-          onchange="updateFileCount(this)">
+          onchange="updateFileCount(this)" required>
         <p id="file-count" class="text-primary mt-2" style="display: none;"></p>
+        <p id="file-error" class="text-danger mt-2" style="display: none;">Please select at least one valid file.</p>
       </div>
     </div>
 
-    <button type="submit" class="btn btn-primary btn-block">Analyze Resumes</button>
+    <button type="submit" id="submitBtn" class="btn btn-primary btn-block">
+      <span id="submitText">Analyze Resumes</span>
+      <div id="submitSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none; margin-left: 10px;">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </button>
   </form>
 </div>
 
@@ -118,12 +124,37 @@
   function updateFileCount(input) {
     const count = input.files.length;
     const display = document.getElementById('file-count');
+    const errorDisplay = document.getElementById('file-error');
     if (count > 0) {
       display.style.display = 'block';
       display.textContent = `${count} file(s) selected`;
+      errorDisplay.style.display = 'none';
     } else {
       display.style.display = 'none';
     }
+  }
+
+  function handleFormSubmit() {
+    const fileInput = document.getElementById('resume');
+    const errorDisplay = document.getElementById('file-error');
+    
+    // File validation
+    if (!fileInput.files || fileInput.files.length === 0) {
+      errorDisplay.style.display = 'block';
+      return false; // Prevent submission
+    }
+    
+    // Disable button to prevent double-click
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitSpinner = document.getElementById('submitSpinner');
+    
+    submitBtn.disabled = true;
+    submitText.textContent = 'Analyzing... Please wait';
+    submitSpinner.style.display = 'inline-block';
+    
+    // Let the form submit naturally (it will redirect to results backend-side)
+    return true;
   }
 </script>
 {% endblock %}
