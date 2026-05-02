@@ -49,9 +49,25 @@ db = client["resume_db"]
 resumes_collection = db["resumes"]
 users_collection = db["users"]
 
-# NLP and Transformer models
-nlp = spacy.load("en_core_web_sm")
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# NLP and Transformer models - Lazy loaded for faster startup
+nlp = None
+model = None
+
+def get_nlp():
+    global nlp
+    if nlp is None:
+        import spacy
+        print("Loading spaCy NLP model...")
+        nlp = spacy.load("en_core_web_sm")
+    return nlp
+
+def get_model():
+    global model
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+        print("Loading SentenceTransformer model...")
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+    return model
 
 # Standard job roles (matches upload.html)
 STANDARD_JOB_ROLES = [
@@ -113,7 +129,8 @@ def extract_technical_skills(text, keywords):
 
 def extract_keywords_from_text(text):
     """Extract important keywords from resume text using spaCy."""
-    doc = nlp(text[:5000])  # Limit to first 5000 chars for performance
+    _nlp = get_nlp()
+    doc = _nlp(text[:5000])  # Limit to first 5000 chars for performance
 
     # Extract nouns, proper nouns, and technical terms
     keywords = []
@@ -135,8 +152,9 @@ def semantic_similarity(text1, text2):
     text1 = text1[:2000]
     text2 = text2[:2000]
 
-    emb1 = model.encode(text1, convert_to_tensor=True)
-    emb2 = model.encode(text2, convert_to_tensor=True)
+    _model = get_model()
+    emb1 = _model.encode(text1, convert_to_tensor=True)
+    emb2 = _model.encode(text2, convert_to_tensor=True)
     score = util.pytorch_cos_sim(emb1, emb2).item()
     return round(score * 100, 2)
 
