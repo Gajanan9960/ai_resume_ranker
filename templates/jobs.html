@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Jobs - Resume Ranker{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+      <h1 class="card-title">Job Postings</h1>
+      <p class="text-secondary">Create and manage your open requisitions</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('createJobForm').style.display='block'">+ Create New Job</button>
+  </div>
+
+  <!-- Create Job Form (Hidden by default) -->
+  <div class="card" id="createJobForm" style="display: none; margin-bottom: 2rem; border: 2px solid var(--primary-color);">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="margin: 0;">Create New Job Posting</h2>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('createJobForm').style.display='none'">Cancel</button>
+    </div>
+    <hr style="margin: 1rem 0; border: none; border-top: 1px solid #eee;">
+    
+    <form method="POST" action="{{ url_for('manage_jobs') }}" onsubmit="document.getElementById('jobSubmitBtn').disabled=true; document.getElementById('jobSubmitBtn').innerText='Creating...';">
+      <div class="form-group">
+        <label for="title" class="form-label">Job Title</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Senior Python Developer" required minlength="2">
+      </div>
+      <div class="form-group">
+        <label for="description" class="form-label">Full Job Description</label>
+        <textarea id="description" name="description" class="form-control" rows="6" placeholder="Paste the full job requirements and responsibilities here..." required minlength="20"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="keywords" class="form-label">Expected Keywords (Optional)</label>
+        <input type="text" id="keywords" name="keywords" class="form-control" placeholder="e.g. Python, Django, AWS, Docker">
+      </div>
+      <button type="submit" id="jobSubmitBtn" class="btn btn-primary">Publish Job Posting</button>
+    </form>
+  </div>
+
+  <!-- Active Jobs List -->
+  <div class="dashboard-grid">
+    {% for job in jobs %}
+    <div class="card" style="display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">{{ job.title }}</h3>
+        <span class="tag {% if job.status == 'Open' %}tag-success{% else %}tag-danger{% endif %}">{{ job.status }}</span>
+      </div>
+      
+      <p class="text-secondary" style="font-size: 0.875rem; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+        {{ job.description }}
+      </p>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee;">
+        <div style="font-weight: 600;">
+          <span style="font-size: 1.25rem; color: var(--primary-color);">{{ job.candidate_count }}</span> Candidates
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="{{ url_for('results', job_filter=job.title) }}" class="btn btn-secondary btn-sm">View Candidates</a>
+          {% if job.status == 'Open' %}
+          <form method="POST" action="{{ url_for('close_job', job_id=job._id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to close this job? You won\'t be able to upload more resumes to it.');">
+            <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5;">Close</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💼</div>
+      <h2>No Job Postings Yet</h2>
+      <p class="text-secondary" style="margin-bottom: 1.5rem;">Create your first job posting to start accepting resumes.</p>
+      <button class="btn btn-primary" onclick="document.getElementById('createJobForm').style.display='block'">Create Job Posting</button>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

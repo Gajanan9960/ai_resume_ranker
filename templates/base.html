@@ -16,6 +16,7 @@
             <div class="nav-links">
                 {% if session.get('user_id') %}
                     <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('manage_jobs') }}" class="nav-item {% if active_page == 'jobs' %}active{% endif %}">Jobs</a>
                     <a href="{{ url_for('upload') }}" class="nav-item {% if active_page == 'upload' %}active{% endif %}">Upload</a>
                     <a href="{{ url_for('results') }}" class="nav-item {% if active_page == 'results' %}active{% endif %}">Results</a>
                     <a href="{{ url_for('about') }}" class="nav-item {% if active_page == 'about' %}active{% endif %}">About</a>

@@ -48,6 +48,7 @@ client = MongoClient(MONGO_URI)
 db = client["resume_db"]
 resumes_collection = db["resumes"]
 users_collection = db["users"]
+jobs_collection = db["jobs"]
 
 # NLP and Transformer models - Lazy loaded for faster startup
 nlp = None
@@ -319,31 +320,86 @@ def logout():
     return redirect(url_for("login"))
 
 
+# ------------------ JOBS MANAGEMENT ------------------
+@app.route("/jobs", methods=["GET", "POST"])
+def manage_jobs():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+        
+    user_id = session["user_id"]
+    
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        keywords_raw = request.form.get("keywords", "").strip()
+        
+        if len(title) < 2 or len(description) < 20:
+            flash("Job Title must be > 2 chars and Description > 20 chars.", "danger")
+            return redirect(url_for("manage_jobs"))
+            
+        jobs_collection.insert_one({
+            "user_id": user_id,
+            "title": title,
+            "description": description,
+            "keywords": keywords_raw,
+            "status": "Open",
+            "created_at": datetime.utcnow()
+        })
+        flash(f"Job '{title}' created successfully!", "success")
+        return redirect(url_for("manage_jobs"))
+        
+    jobs = list(jobs_collection.find({"user_id": user_id}).sort("created_at", DESCENDING))
+    
+    # Calculate candidate counts for each job
+    for job in jobs:
+        job["candidate_count"] = resumes_collection.count_documents({"job_id": str(job["_id"])})
+        
+    return render_template("jobs.html", jobs=jobs)
+
+@app.route("/jobs/<job_id>/close", methods=["POST"])
+def close_job(job_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+        
+    jobs_collection.update_one(
+        {"_id": ObjectId(job_id), "user_id": session["user_id"]},
+        {"$set": {"status": "Closed"}}
+    )
+    flash("Job status updated to Closed.", "info")
+    return redirect(url_for("manage_jobs"))
+
+
 # ------------------ UPLOAD ROUTE ------------------
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
     # Handle GET requests (render upload form)
     if request.method == "GET":
-        return render_template("upload.html")
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        # Fetch open jobs to populate the dropdown
+        open_jobs = list(jobs_collection.find({"user_id": session["user_id"], "status": "Open"}).sort("created_at", DESCENDING))
+        return render_template("upload.html", jobs=open_jobs)
 
     # Handle POST requests (file uploads)
     try:
         uploaded_files = request.files.getlist("resume")
-        job_desc = request.form.get("job_description", "").strip()
-        job_title = request.form.get("job_role", "").strip() or "Unknown Role"
-
-        # Optional keyword extraction (if user provides)
-        keywords_raw = request.form.get("keywords", "")
-        job_keywords = [kw.strip().lower() for kw in keywords_raw.split(",") if kw.strip()]
-
-        # Validation
-        if len(job_title) < 2:
-            flash("Job Role must be at least 2 characters long.", "danger")
+        job_id = request.form.get("job_id", "")
+        
+        if not job_id:
+            flash("Please select a Job Posting.", "danger")
             return redirect(url_for("upload"))
             
-        if len(job_desc) < 20:
-            flash("Job Description must be at least 20 characters long to provide meaningful analysis.", "danger")
+        job = jobs_collection.find_one({"_id": ObjectId(job_id)})
+        if not job:
+            flash("Invalid Job Posting selected.", "danger")
             return redirect(url_for("upload"))
+
+        job_desc = job["description"]
+        job_title = job["title"]
+        
+        # Extract keywords from the saved job
+        keywords_raw = job.get("keywords", "")
+        job_keywords = [kw.strip().lower() for kw in keywords_raw.split(",") if kw.strip()]
 
         # Check if there's actually a selected file
         has_valid_file = any(f for f in uploaded_files if f and f.filename != "")
@@ -389,6 +445,7 @@ def upload():
                 "name": os.path.splitext(filename)[0].title(),
                 "filename": filename,
                 "email": email,
+                "job_id": job_id,
                 "job_title": job_title,
                 "job_keywords": job_keywords,
                 "score": float(score),
