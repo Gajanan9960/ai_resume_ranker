@@ -416,6 +416,37 @@ def upload():
         return redirect(url_for("upload"))
 
 
+# ------------------ CANDIDATE PROFILE ------------------
+@app.route("/candidate/<resume_id>", methods=["GET", "POST"])
+def candidate_profile(resume_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+        
+    try:
+        resume = resumes_collection.find_one({
+            "_id": ObjectId(resume_id),
+            "user_id": session["user_id"]
+        })
+    except:
+        flash("Invalid candidate ID.", "danger")
+        return redirect(url_for("dashboard"))
+        
+    if not resume:
+        flash("Candidate not found or unauthorized.", "danger")
+        return redirect(url_for("dashboard"))
+        
+    if request.method == "POST":
+        new_tag = request.form.get("status")
+        if new_tag in ["Top Candidate", "Shortlisted", "Review", "Rejected", "Hired"]:
+            resumes_collection.update_one(
+                {"_id": ObjectId(resume_id)},
+                {"$set": {"tag": new_tag}}
+            )
+            flash(f"Candidate status updated to {new_tag}", "success")
+            return redirect(url_for("candidate_profile", resume_id=resume_id))
+            
+    return render_template("candidate_profile.html", resume=resume)
+
 # ------------------ RESULTS PAGE ------------------
 @app.route("/results")
 def results():

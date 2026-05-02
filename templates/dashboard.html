@@ -111,13 +111,17 @@
               <div style="font-weight: 700; color: var(--text-secondary);">#{{ loop.index }}</div>
             </td>
             <td>
-              <div style="font-weight: 600;">{{ resume.name }}</div>
+              <div style="font-weight: 600;">
+                  <a href="{{ url_for('candidate_profile', resume_id=resume._id) }}" style="color: var(--text-color); text-decoration: none;">
+                      {{ resume.name }}
+                  </a>
+              </div>
               <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ resume.uploaded_str }}</div>
             </td>
             <td>{{ resume.job_title }}</td>
             <td>
               <span
-                class="tag {% if resume.tag == 'Top Candidate' %}tag-success{% elif resume.tag == 'Shortlisted' %}tag-success{% elif resume.tag == 'Review' %}tag-warning{% else %}tag-danger{% endif %}">
+                class="tag {% if resume.tag == 'Top Candidate' %}tag-success{% elif resume.tag == 'Shortlisted' %}tag-success{% elif resume.tag == 'Review' %}tag-warning{% elif resume.tag == 'Hired' %}tag-success{% else %}tag-danger{% endif %}">
                 {{ resume.tag }}
               </span>
             </td>
@@ -137,19 +141,11 @@
             </td>
             <td>
               <div style="display: flex; gap: 0.5rem;">
-                {% if resume.email != 'N/A' %}
-                <form method="POST" action="{{ url_for('send_email_to_candidate', resume_id=resume._id) }}">
-                  <button type="submit" class="btn btn-primary btn-sm">
-                    Send Mail
-                  </button>
-                </form>
-                {% else %}
-                <button class="btn btn-secondary btn-sm" disabled title="No email found">
-                  Send Mail
-                </button>
-                {% endif %}
+                <a href="{{ url_for('candidate_profile', resume_id=resume._id) }}" class="btn btn-primary btn-sm" title="View Candidate Profile">
+                  View Profile
+                </a>
                 <a href="{{ url_for('serve_resume', filename=resume.filename) }}" target="_blank"
-                  class="btn btn-secondary btn-sm" title="View Resume">
+                  class="btn btn-secondary btn-sm" title="Raw PDF">
                   📄
                 </a>
               </div>

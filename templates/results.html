@@ -64,7 +64,11 @@
         {% for resume in resumes %}
         <tr>
           <td>
-            <div style="font-weight: 600;">{{ resume.name or resume.filename }}</div>
+            <div style="font-weight: 600;">
+                <a href="{{ url_for('candidate_profile', resume_id=resume._id) }}" style="color: var(--text-color); text-decoration: none;">
+                    {{ resume.name or resume.filename }}
+                </a>
+            </div>
             <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ resume.uploaded_str }}</div>
           </td>
           <td>{{ resume.job_title }}</td>
@@ -76,7 +80,7 @@
           </td>
           <td>
             <span
-              class="tag {% if resume.tag == 'Top Candidate' %}tag-success{% elif resume.tag == 'Shortlisted' %}tag-success{% elif resume.tag == 'Review' %}tag-warning{% else %}tag-danger{% endif %}">
+              class="tag {% if resume.tag == 'Top Candidate' %}tag-success{% elif resume.tag == 'Shortlisted' %}tag-success{% elif resume.tag == 'Review' %}tag-warning{% elif resume.tag == 'Hired' %}tag-success{% else %}tag-danger{% endif %}">
               {{ resume.tag }}
             </span>
           </td>
@@ -86,8 +90,15 @@
             </div>
           </td>
           <td>
-            <a href="{{ url_for('serve_resume', filename=resume.filename) }}" target="_blank" class="btn btn-secondary"
-              style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">View PDF</a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('candidate_profile', resume_id=resume._id) }}" class="btn btn-primary btn-sm" title="View Candidate Profile">
+                  View Profile
+                </a>
+                <a href="{{ url_for('serve_resume', filename=resume.filename) }}" target="_blank"
+                  class="btn btn-secondary btn-sm" title="Raw PDF">
+                  📄
+                </a>
+            </div>
           </td>
         </tr>
         {% else %}
