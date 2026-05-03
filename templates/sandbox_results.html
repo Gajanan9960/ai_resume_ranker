@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandbox Results - AI Feedback</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body { background-color: #f8fafc; }
+        .results-container { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+        
+        .score-card { background: white; border-radius: 12px; padding: 3rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-top: 5px solid; }
+        .score-excellent { border-top-color: #10b981; }
+        .score-good { border-top-color: #f59e0b; }
+        .score-poor { border-top-color: #ef4444; }
+        
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; border: 8px solid; font-size: 3rem; font-weight: 700; }
+        .circle-excellent { border-color: #d1fae5; color: #10b981; background: #ecfdf5; }
+        .circle-good { border-color: #fef3c7; color: #f59e0b; background: #fffbeb; }
+        .circle-poor { border-color: #fee2e2; color: #ef4444; background: #fef2f2; }
+
+        .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 768px) { .analysis-grid { grid-template-columns: 1fr; } }
+        
+        .insight-card { background: white; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .insight-card h3 { margin-top: 0; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .skill-tag { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; margin: 0.25rem; }
+        .skill-match { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .skill-miss { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="results-container">
+    
+    {% set score_class = 'score-poor' %}
+    {% set circle_class = 'circle-poor' %}
+    {% set feedback = 'Your resume needs significant tailoring for this role.' %}
+    
+    {% if result.score >= 70 %}
+        {% set score_class = 'score-excellent' %}
+        {% set circle_class = 'circle-excellent' %}
+        {% set feedback = 'Excellent! Your resume is highly aligned with this job description.' %}
+    {% elif result.score >= 40 %}
+        {% set score_class = 'score-good' %}
+        {% set circle_class = 'circle-good' %}
+        {% set feedback = 'Good start, but you are missing some key skills mentioned in the job description.' %}
+    {% endif %}
+
+    <div class="score-card {{ score_class }}">
+        <h2 style="margin-top: 0; color: #475569; text-transform: uppercase; font-size: 1rem; letter-spacing: 1px;">AI Match Score</h2>
+        <div class="score-circle {{ circle_class }}">
+            {{ result.score | int }}%
+        </div>
+        <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem;">{{ result.tag }}</h3>
+        <p class="text-secondary" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">{{ feedback }}</p>
+    </div>
+
+    <div class="analysis-grid">
+        <div class="insight-card" style="border-top: 4px solid #10b981;">
+            <h3>✅ Matched Skills</h3>
+            <p class="text-secondary" style="font-size: 0.9rem; margin-bottom: 1.5rem;">The AI successfully found these keywords from the job description in your resume.</p>
+            <div>
+                {% for skill in result.matched_skills %}
+                    <span class="skill-tag skill-match">{{ skill }}</span>
+                {% else %}
+                    <p class="text-secondary">No direct skill matches found.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="insight-card" style="border-top: 4px solid #ef4444;">
+            <h3>⚠️ Missing Skills</h3>
+            <p class="text-secondary" style="font-size: 0.9rem; margin-bottom: 1.5rem;">The AI could <strong>not</strong> find these important keywords. Consider adding them if you possess these skills.</p>
+            <div>
+                {% for skill in result.missing_skills %}
+                    <span class="skill-tag skill-miss">{{ skill }}</span>
+                {% else %}
+                    <p class="text-secondary">Great job! No major keywords missed.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 3rem;">
+        <p class="text-secondary" style="margin-bottom: 1rem;">Update your resume based on this feedback and try again.</p>
+        <a href="{{ url_for('sandbox') }}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem; text-decoration: none; display: inline-block;">Upload New Version</a>
+    </div>
+
+</div>
+
+</body>
+</html>

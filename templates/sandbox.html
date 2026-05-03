@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer Sandbox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body { background-color: #f8fafc; }
+        .sandbox-container { max-width: 800px; margin: 4rem auto; padding: 0 1rem; }
+        .header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 3rem; border-radius: 12px 12px 0 0; text-align: center; }
+        .header h1 { margin-top: 0; font-size: 2.5rem; }
+        .header p { opacity: 0.9; font-size: 1.1rem; margin-bottom: 0; }
+        .sandbox-form { background: white; padding: 3rem; border-radius: 0 0 12px 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body>
+
+<div class="sandbox-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages" style="margin-bottom: 1rem;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="header">
+        <h1>AI Resume Analyzer</h1>
+        <p>Test your resume against a target job description before you apply. Get instant AI feedback on missing skills.</p>
+    </div>
+
+    <div class="sandbox-form">
+        <form method="POST" action="{{ url_for('sandbox') }}" enctype="multipart/form-data" id="sandboxForm" onsubmit="return handleFormSubmit()">
+            
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="description" class="form-label" style="font-size: 1.1rem;">1. Paste Target Job Description <span class="text-danger">*</span></label>
+                <p class="text-secondary" style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.9rem;">Copy and paste the responsibilities and requirements of the job you want.</p>
+                <textarea id="description" name="description" class="form-control" rows="8" placeholder="e.g. We are looking for a Software Engineer with 2 years of experience in Python, AWS, and Docker..." required minlength="20"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="keywords" class="form-label" style="font-size: 1.1rem;">2. Expected Keywords (Optional)</label>
+                <p class="text-secondary" style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.9rem;">Comma separated skills (e.g. Python, React, SQL).</p>
+                <input type="text" id="keywords" name="keywords" class="form-control" placeholder="Python, React, SQL">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 2.5rem;">
+                <label class="form-label" style="font-size: 1.1rem;">3. Upload Your Draft Resume <span class="text-danger">*</span></label>
+                <div class="upload-area" onclick="document.getElementById('resume').click()">
+                    <div class="upload-icon" style="font-size: 3rem;">📄</div>
+                    <h3>Click to Upload Resume</h3>
+                    <p class="text-secondary">Supported formats: PDF, JPG, PNG</p>
+                    <input type="file" id="resume" name="resume" accept=".pdf,.jpg,.jpeg,.png" style="display: none;" onchange="updateFileCount(this)" required>
+                    <p id="file-count" class="text-primary mt-2" style="font-weight: 600; display: none;"></p>
+                    <p id="file-error" class="text-danger mt-2" style="display: none;">Please select a valid file.</p>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; padding: 1.25rem; font-size: 1.2rem; font-weight: 600; background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); border: none;">
+                <span id="submitText">Analyze My Resume</span>
+                <div id="submitSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none; margin-left: 10px;"></div>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function updateFileCount(input) {
+    const count = input.files.length;
+    const display = document.getElementById('file-count');
+    const errorDisplay = document.getElementById('file-error');
+    if (count > 0) {
+        display.style.display = 'block';
+        display.textContent = "Selected: " + input.files[0].name;
+        errorDisplay.style.display = 'none';
+    } else {
+        display.style.display = 'none';
+    }
+}
+
+function handleFormSubmit() {
+    const fileInput = document.getElementById('resume');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        document.getElementById('file-error').style.display = 'block';
+        return false; 
+    }
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitText').textContent = 'Analyzing... This takes a few seconds.';
+    document.getElementById('submitSpinner').style.display = 'inline-block';
+    return true;
+}
+</script>
+
+</body>
+</html>

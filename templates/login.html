@@ -33,5 +33,10 @@
       Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
     </div>
   </div>
+  
+  <div style="text-align: center; margin-top: 2rem;">
+    <p class="text-secondary" style="margin-bottom: 0.5rem;">Are you a student?</p>
+    <a href="{{ url_for('sandbox') }}" class="btn btn-secondary" style="border: 1px solid var(--primary-color); color: var(--primary-color); background: white;">Try the AI Resume Analyzer</a>
+  </div>
 </div>
 {% endblock %}

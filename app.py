@@ -473,6 +473,69 @@ def upload():
         return redirect(url_for("upload"))
 
 
+# ------------------ STUDENT SANDBOX (RESUME ANALYZER) ------------------
+@app.route("/sandbox", methods=["GET", "POST"])
+def sandbox():
+    if request.method == "GET":
+        return render_template("sandbox.html")
+        
+    # POST - Analyze resume without saving to DB
+    if "resume" not in request.files:
+        flash("No file provided.", "danger")
+        return redirect(url_for("sandbox"))
+        
+    file = request.files["resume"]
+    job_desc = request.form.get("description", "").strip()
+    keywords_raw = request.form.get("keywords", "").strip()
+    
+    if not job_desc:
+        flash("Please provide a target job description.", "danger")
+        return redirect(url_for("sandbox"))
+        
+    if not file or file.filename == "":
+        flash("Invalid file.", "danger")
+        return redirect(url_for("sandbox"))
+        
+    filename = secure_filename(file.filename)
+    if not filename.lower().endswith((".pdf", ".jpg", ".jpeg", ".png")):
+        flash("Invalid file format. Please upload PDF or Image.", "danger")
+        return redirect(url_for("sandbox"))
+        
+    # Save temporarily to extract text
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], "sandbox_temp_" + filename)
+    file.save(file_path)
+    
+    try:
+        if filename.lower().endswith(".pdf"):
+            resume_text = extract_text_from_pdf(file_path)
+        else:
+            resume_text = extract_text_from_image(file_path)
+    finally:
+        # Clean up temp file immediately
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+    if not resume_text.strip():
+        flash("Could not read text from your resume. Please try a different file.", "danger")
+        return redirect(url_for("sandbox"))
+        
+    job_keywords = [kw.strip().lower() for kw in keywords_raw.split(",") if kw.strip()]
+    
+    # Run the AI Scoring
+    score, matched_skills, tag, missing_skills = weighted_resume_score(
+        resume_text, job_keywords, job_desc
+    )
+    
+    result_data = {
+        "score": float(score),
+        "tag": tag,
+        "matched_skills": matched_skills,
+        "missing_skills": missing_skills
+    }
+    
+    return render_template("sandbox_results.html", result=result_data)
+
+
 # ------------------ PUBLIC APPLY ROUTE ------------------
 @app.route("/apply/<job_id>", methods=["GET", "POST"])
 def public_apply(job_id):
