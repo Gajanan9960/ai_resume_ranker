@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply - {{ job.title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body { background-color: #f8fafc; }
+        .apply-container { max-width: 800px; margin: 4rem auto; padding: 0 1rem; }
+        .job-details { background: white; padding: 2rem; border-radius: 8px 8px 0 0; border-bottom: 1px solid #e2e8f0; }
+        .apply-form { background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body>
+
+<div class="apply-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages" style="margin-bottom: 1rem;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="job-details">
+        <h1 style="margin-top: 0;">{{ job.title }}</h1>
+        <p style="white-space: pre-wrap; color: #475569; line-height: 1.6;">{{ job.description }}</p>
+    </div>
+
+    <div class="apply-form">
+        <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Submit Your Application</h2>
+        <form method="POST" action="{{ url_for('public_apply', job_id=job._id) }}" enctype="multipart/form-data" id="applyForm" onsubmit="return handleFormSubmit()">
+            
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Resume / CV <span class="text-danger">*</span></label>
+                <div class="upload-area" onclick="document.getElementById('resume').click()">
+                    <div class="upload-icon">📄</div>
+                    <h3>Click to Upload Resume</h3>
+                    <p class="text-secondary">Supported formats: PDF, JPG, PNG</p>
+                    <input type="file" id="resume" name="resume" accept=".pdf,.jpg,.jpeg,.png" style="display: none;" onchange="updateFileCount(this)" required>
+                    <p id="file-count" class="text-primary mt-2" style="display: none;"></p>
+                    <p id="file-error" class="text-danger mt-2" style="display: none;">Please select a valid file.</p>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                <span id="submitText">Submit Application</span>
+                <div id="submitSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none; margin-left: 10px;"></div>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function updateFileCount(input) {
+    const count = input.files.length;
+    const display = document.getElementById('file-count');
+    const errorDisplay = document.getElementById('file-error');
+    if (count > 0) {
+        display.style.display = 'block';
+        display.textContent = input.files[0].name;
+        errorDisplay.style.display = 'none';
+    } else {
+        display.style.display = 'none';
+    }
+}
+
+function handleFormSubmit() {
+    const fileInput = document.getElementById('resume');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        document.getElementById('file-error').style.display = 'block';
+        return false; 
+    }
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitText').textContent = 'Submitting...';
+    document.getElementById('submitSpinner').style.display = 'inline-block';
+    return true;
+}
+</script>
+
+</body>
+</html>

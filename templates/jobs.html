@@ -54,7 +54,10 @@
         <div style="font-weight: 600;">
           <span style="font-size: 1.25rem; color: var(--primary-color);">{{ job.candidate_count }}</span> Candidates
         </div>
-        <div style="display: flex; gap: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+          {% if job.status == 'Open' %}
+          <button class="btn btn-sm" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;" onclick="navigator.clipboard.writeText('{{ url_for('public_apply', job_id=job._id, _external=True) }}'); alert('Public Application Link copied to clipboard!');">🔗 Copy Apply Link</button>
+          {% endif %}
           <a href="{{ url_for('results', job_filter=job.title) }}" class="btn btn-secondary btn-sm">View Candidates</a>
           {% if job.status == 'Open' %}
           <form method="POST" action="{{ url_for('close_job', job_id=job._id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to close this job? You won\'t be able to upload more resumes to it.');">

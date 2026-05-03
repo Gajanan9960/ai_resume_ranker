@@ -473,6 +473,86 @@ def upload():
         return redirect(url_for("upload"))
 
 
+# ------------------ PUBLIC APPLY ROUTE ------------------
+@app.route("/apply/<job_id>", methods=["GET", "POST"])
+def public_apply(job_id):
+    try:
+        job = jobs_collection.find_one({"_id": ObjectId(job_id), "status": "Open"})
+    except:
+        return "Invalid Job Link", 400
+        
+    if not job:
+        return "This job posting is closed or does not exist.", 404
+        
+    if request.method == "GET":
+        return render_template("apply.html", job=job)
+        
+    # POST - Handle candidate submission
+    if "resume" not in request.files:
+        flash("No file provided.", "danger")
+        return redirect(url_for("public_apply", job_id=job_id))
+        
+    file = request.files["resume"]
+    candidate_name = request.form.get("name", "").strip()
+    candidate_email = request.form.get("email", "").strip()
+    
+    if not file or file.filename == "":
+        flash("Invalid file.", "danger")
+        return redirect(url_for("public_apply", job_id=job_id))
+        
+    filename = secure_filename(file.filename)
+    if not filename.lower().endswith((".pdf", ".jpg", ".jpeg", ".png")):
+        flash("Invalid file format. Please upload PDF or Image.", "danger")
+        return redirect(url_for("public_apply", job_id=job_id))
+        
+    # Save file
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    file.save(file_path)
+    
+    # Parse text
+    if filename.lower().endswith(".pdf"):
+        resume_text = extract_text_from_pdf(file_path)
+    else:
+        resume_text = extract_text_from_image(file_path)
+        
+    if not resume_text.strip():
+        flash("Could not read text from your resume. Please try a different file.", "danger")
+        return redirect(url_for("public_apply", job_id=job_id))
+        
+    # Get job details
+    job_desc = job["description"]
+    keywords_raw = job.get("keywords", "")
+    job_keywords = [kw.strip().lower() for kw in keywords_raw.split(",") if kw.strip()]
+    
+    # Score
+    score, matched_skills, tag, missing_skills = weighted_resume_score(
+        resume_text, job_keywords, job_desc
+    )
+    
+    # Auto-extract email if they didn't provide one (though form will require it)
+    extracted_email = extract_email(resume_text)
+    final_email = candidate_email if candidate_email else extracted_email
+    
+    # Save to DB assigned to the recruiter (job.user_id)
+    resumes_collection.insert_one({
+        "name": candidate_name or os.path.splitext(filename)[0].title(),
+        "filename": filename,
+        "email": final_email,
+        "job_id": str(job["_id"]),
+        "job_title": job["title"],
+        "job_keywords": job_keywords,
+        "score": float(score),
+        "tag": tag,
+        "matched_skills": matched_skills,
+        "missing_skills": missing_skills,
+        "uploaded_at": datetime.utcnow(),
+        "resume_text": resume_text,
+        "user_id": job["user_id"] # The recruiter who created the job
+    })
+    
+    return render_template("apply_success.html", job=job)
+
+
 # ------------------ CANDIDATE PROFILE ------------------
 @app.route("/candidate/<resume_id>", methods=["GET", "POST"])
 def candidate_profile(resume_id):
